@@ -23,11 +23,6 @@ spec:
       description: The name of the test being executed.
   steps:
     - name: test-metadata
-      env:
-        - name: SNAPSHOT
-          value: $(params.snapshot)
       script: |
         #!/bin/bash
         echo "Hello world"
-        echo "${SNAPSHOT}" 
-
