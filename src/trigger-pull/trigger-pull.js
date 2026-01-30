@@ -1,3 +1,3 @@
 export const TriggerPull = () => {
-  return 'trigger pull';
+  return 'trigger pull1';
 };
