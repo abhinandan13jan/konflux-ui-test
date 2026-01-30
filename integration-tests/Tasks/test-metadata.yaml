@@ -1,0 +1,34 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: test-metadata
+  labels:
+    app.kubernetes.io/version: '0.2'
+    upstream-usable: 'true'
+  annotations:
+    tekton.dev/pipelines.minVersion: 0.12.1
+    tekton.dev/tags: konflux
+spec:
+  results:
+    - name: job-spec
+      description: The konflux ci job spec metadata generated.
+    - name: prefetch-artifact
+      description: The OCI artifact that contains the prefetch dependencies generated during the build phase.
+  params:
+    - name: SNAPSHOT
+      description: The JSON string of the Snapshot under test.
+    - name: test-name
+      type: string
+      description: The name of the test being executed.
+    - name: enable-prefetch
+      type: string
+      description: Flag to indicate whether to retrieve the OCI artifact associated with the prefetching operation from the build phase. If set to "true", the artifact's digest will be fetched.
+      default: 'false'
+  steps:
+    - name: test-metadata  
+      script: |
+        #!/bin/bash
+        echo "Hello world"
+
+ 
