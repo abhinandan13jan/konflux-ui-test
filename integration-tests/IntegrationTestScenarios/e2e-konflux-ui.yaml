@@ -19,7 +19,7 @@ spec:
   resolverRef:
     params:
       - name: url
-        value: https://github.com/abhinandan13jan/konflux-ui
+        value: https://github.com/abhinandan13jan/konflux-ui/tree/add-e2e-workflow
       - name: revision
         value: main
       - name: pathInRepo
