@@ -10,13 +10,9 @@ metadata:
     tekton.dev/pipelines.minVersion: 0.12.1
     tekton.dev/tags: konflux
 spec:
-  results:
-    - name: job-spec
-      description: The konflux ci job spec metadata generated.
-    - name: prefetch-artifact
-      description: The OCI artifact that contains the prefetch dependencies generated during the build phase.
   steps:
     - name: test-metadata
+      image: alpine
       script: |
         #!/bin/bash
         echo "Hello world"
