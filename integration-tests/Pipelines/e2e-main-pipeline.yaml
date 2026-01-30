@@ -27,7 +27,5 @@ spec:
           - name: pathInRepo
             value: integration-tests/Tasks/test-metadata.yaml
       params:
-        - name: SNAPSHOT
-          value: $(params.SNAPSHOT)
         - name: test-secret
           value: $(params.konflux-test-infra-secret)
