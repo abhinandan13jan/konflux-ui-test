@@ -4,9 +4,6 @@ kind: Pipeline
 metadata:
   name: e2e-main-pipeline
   namespace: abhindas-tenant
-  labels:
-    appstudio.openshift.io/component: abhind
-    appstudio.openshift.io/application: tssc-cli
 spec:
   params:
     - name: konflux-test-infra-secret

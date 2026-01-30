@@ -1,18 +1,11 @@
----
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: test-metadata
-  labels:
-    app.kubernetes.io/version: '0.2'
-    upstream-usable: 'true'
-  annotations:
-    tekton.dev/pipelines.minVersion: 0.12.1
-    tekton.dev/tags: konflux
 spec:
   steps:
-    - name: test-metadata
+    - name: echo
       image: alpine
       script: |
-        #!/bin/bash
-        echo "Hello world"
+        #!/bin/sh
+        echo "Hello World"  
