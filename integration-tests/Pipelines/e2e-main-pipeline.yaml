@@ -22,14 +22,16 @@ spec:
         resolver: git
         params:
           - name: url
-            value: https://github.com/abhinandan13jan/konflux-ui-test
+            value: https://github.com/konflux-ci/tekton-integration-catalog.git
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/test-metadata.yaml
+            value: tasks/test-metadata/0.2/test-metadata.yaml
       params:
-        - name: test-secret
-          value: $(params.konflux-test-infra-secret)
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+        - name: test-name
+          value: $(context.pipelineRun.name)
     - name: show-snapshot-data
       taskRef:
         resolver: git
@@ -43,3 +45,16 @@ spec:
       params:
         - name: snapshot
           value: $(params.SNAPSHOT)
+    - name: check-org-membership
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/abhinandan13jan/konflux-ui-test
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: integration-tests/Tasks/check-org-membership.yaml
+      params:
+        - name: job-spec
+          value: $(tasks.test-metadata.results.job-spec)
