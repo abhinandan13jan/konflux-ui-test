@@ -4,12 +4,15 @@ metadata:
   name: test-metadata
 spec:
   params:
-    - name: test-secret
+    - name: snapshot
       description: 'The JSON string representing the snapshot of the application under test.'
       type: string
   steps:
     - name: echo
       image: alpine
+      env:
+        - name: SNAPSHOT
+          value: $(params.snapshot)
       script: |
         #!/bin/sh
-        echo "Hello World"
+        echo "${SNAPSHOT}" 

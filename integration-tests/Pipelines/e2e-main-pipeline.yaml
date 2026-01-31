@@ -6,6 +6,10 @@ metadata:
   namespace: abhindas-tenant
 spec:
   params:
+    - name: SNAPSHOT
+      description: 'The JSON string representing the snapshot of the application under test.'
+      default: '{"components": [{"name":"test-app", "containerImage": "quay.io/example/repo:latest"}]}'
+      type: string
     - name: konflux-test-infra-secret
       description: The name of secret where testing infrastructures credentials are stored.
       type: string
@@ -25,4 +29,17 @@ spec:
             value: integration-tests/Tasks/test-metadata.yaml
       params:
         - name: test-secret
+          value: $(params.konflux-test-infra-secret)
+    - name: show-snapshot-data
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/abhinandan13jan/konflux-ui-test
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: integration-tests/Tasks/snapshot-details.yaml
+      params:
+        - name: snapshot
           value: $(params.konflux-test-infra-secret)
