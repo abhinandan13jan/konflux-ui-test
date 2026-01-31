@@ -42,4 +42,4 @@ spec:
             value: integration-tests/Tasks/show-snapshot-data.yaml
       params:
         - name: snapshot
-          value: $(params.konflux-test-infra-secret)
+          value: $(params.SNAPSHOT)
