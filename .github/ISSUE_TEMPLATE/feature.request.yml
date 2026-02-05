@@ -1,5 +1,5 @@
-name: Bug 🐞
-description: Report a bug report
+name: Feature 🐞
+description: Request a feature
 type: bug
 projects: ['podman-desktop/4']
 
@@ -7,24 +7,24 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before opening a bug report, please search for the behaviour in the existing issues.
+        Before opening a feature request, please search for the behaviour in the existing issues.
 
         ---
 
         Thank you for taking the time to file a bug report. To address this bug as fast as possible, we need some information.
 
   - type: textarea
-    id: bug-title
+    id: feature-title
     attributes:
-      label: Bug title
+      label: Feature title
       description: title?
     validations:
       required: true
 
   - type: textarea
-    id: bug-description
+    id: feature-description
     attributes:
-      label: Bug description
+      label: Feature description
       description: What happened?
     validations:
       required: true
@@ -51,19 +51,6 @@ body:
         - 'Scoop (Windows)'
         - 'Winget (Windows)'
         - 'Other'
-
-  - type: textarea
-    id: environment
-    attributes:
-      label: which environment
-      description: What steps do we need to take to reproduce this error?
-
-  - type: textarea
-    id: image-proxy
-    attributes:
-      label: image of proxy
-      description: If applicable, provide relevant log output.
-      render: shell
 
   - type: textarea
     id: additional-context
