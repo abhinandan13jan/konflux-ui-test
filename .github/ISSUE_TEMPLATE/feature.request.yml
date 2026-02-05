@@ -1,6 +1,6 @@
 name: Feature 🐞
 description: Request a feature
-type: bug
+type: feature
 projects: ['podman-desktop/4']
 
 body:
@@ -18,15 +18,6 @@ body:
     attributes:
       label: Feature description
       description: What happened?
-    validations:
-      required: true
-
-  - type: input
-    id: user-agent
-    attributes:
-      label: user agent
-      description: 'Which operating system are you on? Please provide the version as well. If you are on a Mac, please specify Apple silicon or Intel.'
-      placeholder: 'macOS Ventura 13.4 (Arm), Windows 11'
     validations:
       required: true
 
