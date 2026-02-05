@@ -1,70 +1,62 @@
-name: "💡 Feature Request"
-description: Create a new ticket for a new feature request
-title: "💡 [REQUEST] - <title>"
-labels: [
-  "enhancement"
-]
+name: Bug
+description: Report a bug report
+type: bug
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a bug report, please search for the behaviour in the existing issues.
+
+        ---
+
+        Thank you for taking the time to file a bug report. To address this bug as fast as possible, we need some information.
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug description
+      description: What happened?
+    validations:
+      required: true
+
   - type: input
-    id: concise_title
+    id: user-agent
     attributes:
-      label: "Concise Description"
-      placeholder: write a concise and appropraiate one line description of the feature request / idea
+      label: user agent
+      description: 'Which operating system are you on? Please provide the version as well. If you are on a Mac, please specify Apple silicon or Intel.'
+      placeholder: 'macOS Ventura 13.4 (Arm), Windows 11'
     validations:
       required: true
-  - type: textarea
-    id: About_Feature
+
+  - type: dropdown
+    id: install
     attributes:
-      label: "About Feature"
-      description: About Feature Request
-      placeholder: "Write about the idea in detail, about how it will be useful and which problem would it solve"
-    validations:
-      required: true
-  - type: textarea
-    id: Solution
-    attributes:
-      label: "Solution Proposed"
-      description: Write your solution that could solve this feature request
-      placeholder: "Write about the hypothetical solution you propose"
-    validations:
-      required: false
-  - type: textarea
-    id: reference_issues
-    attributes:
-      label: "Reference Issues"
-      description: Common issues that you think is relevant to this feature request
-      placeholder: "#Issues IDs"
-    validations:
-      required: false
-  - type: textarea
-    id: basic_example
-    attributes:
-      label: "Additional Info"
-      description: Write the facts or additional information that you think should be considered for the solution.
-      placeholder: A few specific words would be enough.
-    validations:
-      required: false
-  - type: textarea
-    id: drawbacks
-    attributes:
-      label: "Drawbacks"
-      description: What are the drawbacks/impacts of your feature request ?
-      placeholder: Identify the drawbacks and impacts while being neutral on your feature request
-    validations:
-      required: false
-  - type: textarea
-    id: unresolved_question
-    attributes:
-      label: "Unresolved questions"
-      description: What questions still remain unresolved ?
-      placeholder: Identify any unresolved issues.
-    validations:
-      required: false
-  - type: checkboxes
-    id: coc
-    attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct]()
+      label: Installation Method
+      description: 'How did you install Podman Desktop?'
       options:
-        - label: I follow [Contributing Guidelines](https://github.com/Anmol-Baranwal/Awesome-Illustrations-4Projects/blob/main/CONTRIBUTING.md) of this project.
-          required: true
+        - 'Installer from website/GitHub releases'
+        - 'Brew (macOS)'
+        - 'Chocolatey (Windows)'
+        - 'Flathub (Linux)'
+        - 'Scoop (Windows)'
+        - 'Winget (Windows)'
+        - 'Other'
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: which environment
+      description: What steps do we need to take to reproduce this error?
+
+  - type: textarea
+    id: image-proxy
+    attributes:
+      label: image of proxy
+      description: If applicable, provide relevant log output.
+      render: shell
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots here.
