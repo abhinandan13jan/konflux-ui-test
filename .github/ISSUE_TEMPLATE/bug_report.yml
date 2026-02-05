@@ -46,10 +46,10 @@ body:
     validations:
       required: false
   - type: checkboxes
-    id: coc
+    id: terms
     attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct]()
+      label: Terms & Conditions
+      description: By submitting this issue, I agree to be contacted back
       options:
-        - label: I follow [Contributing Guidelines](https://github.com/Anmol-Baranwal/Awesome-Illustrations-4Projects/blob/main/CONTRIBUTING.md) of this project.
+        - label: whatever
           required: true
