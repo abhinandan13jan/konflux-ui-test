@@ -2,8 +2,9 @@ name: "Report a bug 🐞"
 description: Create a new Bug
 title: "[BUG] - <title>"
 labels: [
-  "enhancement"
+  "bug"
 ]
+type: bug
 body:
   - type: textarea
     id: bug-description
