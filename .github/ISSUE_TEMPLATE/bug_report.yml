@@ -1,6 +1,5 @@
 name: Bug 🐞
 description: Report a bug report
-type: bug
 
 body:
   - type: markdown
