@@ -1,7 +1,6 @@
 name: Feature 🐞
 description: Request a feature
 type: feature
-projects: ['podman-desktop/4']
 
 body:
   - type: markdown
