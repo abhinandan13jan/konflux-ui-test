@@ -1,6 +1,7 @@
 name: Bug 🐞
 description: Report a bug report
 type: bug
+projects: ["podman-desktop/4"]
 
 body:
   - type: markdown
@@ -23,9 +24,9 @@ body:
   - type: input
     id: user-agent
     attributes:
-      label: user agent
-      description: 'Which operating system are you on? Please provide the version as well. If you are on a Mac, please specify Apple silicon or Intel.'
-      placeholder: 'macOS Ventura 13.4 (Arm), Windows 11'
+      label: User agent data
+      description: "User agent data"
+      placeholder: "macOS Ventura 13.4 (Arm), Windows 11"
     validations:
       required: true
 
@@ -33,26 +34,26 @@ body:
     id: install
     attributes:
       label: Installation Method
-      description: 'How did you install Podman Desktop?'
+      description: "How did you install Podman Desktop?"
       options:
-        - 'Installer from website/GitHub releases'
-        - 'Brew (macOS)'
-        - 'Chocolatey (Windows)'
-        - 'Flathub (Linux)'
-        - 'Scoop (Windows)'
-        - 'Winget (Windows)'
-        - 'Other'
+        - "Installer from website/GitHub releases"
+        - "Brew (macOS)"
+        - "Chocolatey (Windows)"
+        - "Flathub (Linux)"
+        - "Scoop (Windows)"
+        - "Winget (Windows)"
+        - "Other"
 
   - type: textarea
     id: environment
     attributes:
-      label: which environment
+      label: Environment
       description: What steps do we need to take to reproduce this error?
 
   - type: textarea
     id: image-proxy
     attributes:
-      label: image of proxy
+      label: Image proxy
       description: If applicable, provide relevant log output.
       render: shell
 
