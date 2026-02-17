@@ -20,7 +20,7 @@ spec:
       default: 'quay.io/konflux-test-storage/konflux-team/release-service-catalog'
       description: The ORAS container used to store all test artifacts.
   tasks:
-    - name: get-konflux-ui-pr-metadata
+    - name: konflux-ui-pr-metadata
       taskRef:
         resolver: git
         params:
@@ -29,7 +29,7 @@ spec:
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/get-konflux-ui-pr-metadata.yaml
+            value: integration-tests/Tasks/konflux-ui-pr-metadata.yaml
       params:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
@@ -60,12 +60,12 @@ spec:
             value: integration-tests/Tasks/check-org-membership.yaml
       params:
         - name: job-spec
-          value: $(tasks.get-konflux-ui-pr-metadata.results.job-spec)
+          value: $(tasks.konflux-ui-pr-metadata.results.job-spec)
     - name: provision-kind-cluster
       runAfter:
         - check-org-membership
       when:
-        - input: '$(tasks.get-konflux-ui-pr-metadata.results.pull-request-author)'
+        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
           operator: notin
           values: ['red-hat-konflux[bot]']
       taskRef:
@@ -98,3 +98,107 @@ spec:
           value: $(params.oci-container-repo):$(context.pipelineRun.name)
         - name: credentials-secret-name
           value: $(params.konflux-test-infra-secret)
+    - name: deploy-konflux
+      when:
+        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+          operator: notin
+          values: ['red-hat-konflux[bot]']
+      runAfter:
+        - provision-kind-cluster
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/tekton-integration-catalog
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/konflux-ci/deploy/0.2/deploy-konflux-ci.yaml
+      params:
+        - name: cluster-access-secret
+          value: kfg-$(context.pipelineRun.name)
+        - name: component-name
+          value: release-service-catalog
+        - name: component-pr-owner
+          value: $(tasks.konflux-ui-pr-metadata.results.pull-request-author)
+        - name: component-pr-sha
+          value: ''
+        - name: component-pr-source-branch
+          value: $(tasks.konflux-ui-pr-metadata.results.source-repo-branch)
+        - name: oci-ref
+          value: $(params.oci-container-repo):$(context.pipelineRun.name)
+        - name: credentials-secret-name
+          value: $(params.konflux-test-infra-secret)
+  finally:
+    - name: deprovision-kind-cluster
+      when:
+        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+          operator: notin
+          values: ['red-hat-konflux[bot]']
+        - input: '$(tasks.check-if-related-test.results.result)'
+          operator: in
+          values: ['true']
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/tekton-integration-catalog
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/mapt-oci/kind-aws-spot/deprovision/0.1/kind-aws-deprovision.yaml
+      params:
+        - name: secret-aws-credentials
+          value: mapt-kind-secret
+        - name: id
+          value: $(context.pipelineRun.name)
+        - name: cluster-access-secret
+          value: kfg-$(context.pipelineRun.name)
+        - name: oci-container
+          value: $(params.oci-container-repo):$(context.pipelineRun.name)
+        - name: oci-credentials
+          value: konflux-test-infra
+    - name: pull-request-status-message
+      when:
+        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+          operator: notin
+          values: ['red-hat-konflux[bot]']
+        - input: '$(tasks.check-if-related-test.results.result)'
+          operator: in
+          values: ['true']
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/tekton-integration-catalog.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/pull-request-comment/0.1/pull-request-comment.yaml
+      params:
+        - name: test-name
+          value: '$(context.pipelineRun.name)'
+        - name: oci-container
+          value: '$(params.oci-container-repo):$(context.pipelineRun.name)'
+        - name: pipeline-aggregate-status
+          value: '$(tasks.status)'
+        - name: pull-request-author
+          value: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+        - name: pull-request-number
+          value: '$(tasks.konflux-ui-pr-metadata.results.pull-request-number)'
+        - name: git-repo
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-repo)'
+        - name: git-org
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-org)'
+        - name: git-revision
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-revision)'
+        - name: junit-report-name
+          value: e2e-report.xml
+        - name: e2e-log-name
+          value: e2e-tests.log
+        - name: cluster-provision-log-name
+          value: cluster-provision.log
+        - name: enable-test-results-analysis
+          value: 'true'
+        - name: artifact-browser-url
+          value: $(params.artifact-browser-url)
