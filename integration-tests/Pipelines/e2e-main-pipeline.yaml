@@ -19,6 +19,10 @@ spec:
     - name: oci-container-repo
       default: 'quay.io/konflux-test-storage/konflux-team/release-service-catalog'
       description: The ORAS container used to store all test artifacts.
+    - name: artifact-browser-url
+      description: 'URL to the artifact browser deployment. If provided, a link will be added to PR comments.'
+      default: ''
+      type: string
   tasks:
     - name: konflux-ui-pr-metadata
       taskRef:
@@ -197,5 +201,3 @@ spec:
           value: cluster-provision.log
         - name: enable-test-results-analysis
           value: 'true'
-        - name: artifact-browser-url
-          value: $(params.artifact-browser-url)
