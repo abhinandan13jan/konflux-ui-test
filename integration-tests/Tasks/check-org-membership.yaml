@@ -35,40 +35,29 @@ spec:
         if [ "$EVENT_TYPE" != 'pull_request' ]; then
             echo "The workflow is not triggered from PR, but $EVENT_TYPE - skipping further checks."
             exit 0
-          fi
+        fi
 
-          WHITELISTED_BOT_NAME=("red-hat-konflux[bot]" "konflux-staging[bot]")
-          REQUIRED_LABEL_NAME="ok-to-test"
+        WHITELISTED_BOT_NAME=("red-hat-konflux[bot]" "konflux-staging[bot]")
+        REQUIRED_LABEL_NAME="ok-to-test"
 
-          ORG=$(jq -r '.git.git_org' <<< $JOB_SPEC)
+        ORG=$(jq -r '.git.git_org' <<< $JOB_SPEC)
 
-          if [ "$PR_AUTHOR" == "$WHITELISTED_BOT_NAME" ]; then
-            echo "PR author is "$WHITELISTED_BOT_NAME", skipping further checks."
+        if [ "$PR_AUTHOR" == "$WHITELISTED_BOT_NAME" ]; then
+          echo "PR author is "$WHITELISTED_BOT_NAME", skipping further checks."
+          exit 0
+        fi
+
+        if [[ "$PR_LABELS" == *$REQUIRED_LABEL_NAME* ]]; then
+          echo "PR has '$REQUIRED_LABEL_NAME' label, skipping further checks."
+          exit 0
+        fi
+
+        ALLOWED_USERS=("Katka92" "rrosatti" "janaki29" "sahil143" "testcara" "milantaky" "StanislavJochman" "JoaoPedroPP" "rakshett" "abhinandan13jan" "marcin-michal")
+        for author in "${ALLOWED_USERS[@]}"; do
+          if [[ "$author" == "$PR_AUTHOR" ]]; then
+            echo "PR author is in ALLOWED_USERS list. Running E2E tests."
             exit 0
           fi
-
-          if [[ "$PR_LABELS" == *$REQUIRED_LABEL_NAME* ]]; then
-            echo "PR has '$REQUIRED_LABEL_NAME' label, skipping further checks."
-            exit 0
-          fi
-
-          ALLOWED_USERS=("Katka92" "rrosatti" "janaki29" "sahil143" "testcara" "milantaky" "StanislavJochman" "JoaoPedroPP" "rakshett" "abhinandan13jan" "marcin-michal")
-          for author in "${ALLOWED_USERS[@]}"; do
-            if [[ "$author" == "$PR_AUTHOR" ]]; then
-              echo "PR author is in ALLOWED_USERS list. Running E2E tests."
-              exit 0
-            fi
-          done
-
-          ERROR_SUMMARY=$(cat <<EOF
-
-          ### ❌ Cannot run E2E tests - at least one of the following conditions must be met:
-          * PR author is '$WHITELISTED_BOT_NAME'
-          * PR has label '$REQUIRED_LABEL_NAME'
-          * PR author is a konflux-ui developer (listed in ALLOWED_USERS in this script)
-          EOF
-          )
-          echo "$ERROR_SUMMARY" >> $GITHUB_STEP_SUMMARY
-          echo "$ERROR_SUMMARY"
-
-          exit 1
+        done
+ 
+        exit 1
