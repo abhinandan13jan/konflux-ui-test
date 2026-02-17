@@ -60,12 +60,12 @@ spec:
             value: integration-tests/Tasks/check-org-membership.yaml
       params:
         - name: job-spec
-          value: $(tasks.test-metadata.results.job-spec)
+          value: $(tasks.get-konflux-ui-pr-metadata.results.job-spec)
     - name: provision-kind-cluster
       runAfter:
         - check-org-membership
       when:
-        - input: '$(tasks.test-metadata.results.pull-request-author)'
+        - input: '$(tasks.get-konflux-ui-pr-metadata.results.pull-request-author)'
           operator: notin
           values: ['red-hat-konflux[bot]']
       taskRef:
