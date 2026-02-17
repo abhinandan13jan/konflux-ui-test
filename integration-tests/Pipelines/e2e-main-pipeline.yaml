@@ -53,6 +53,9 @@ spec:
         - name: snapshot
           value: $(params.SNAPSHOT)
     - name: check-org-membership
+      runAfter:
+        - show-snapshot-data
+        - konflux-ui-pr-metadata
       taskRef:
         resolver: git
         params:
@@ -133,6 +136,25 @@ spec:
           value: $(params.oci-container-repo):$(context.pipelineRun.name)
         - name: credentials-secret-name
           value: $(params.konflux-test-infra-secret)
+    - name: run-e2e-konflux-ui
+      when:
+        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+          operator: notin
+          values: ['red-hat-konflux[bot]']
+      runAfter:
+        - deploy-konflux
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/abhinandan13jan/konflux-ui-test
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: integration-tests/Tasks/check-org-membership.yaml
+      params:
+        - name: job-spec
+          value: '$(tasks.test-metadata.results.job-spec)'
   finally:
     - name: deprovision-kind-cluster
       when:
