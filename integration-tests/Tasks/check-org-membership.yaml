@@ -4,19 +4,19 @@ kind: Task
 metadata:
   name: check-org-membership
   annotations:
-    tekton.dev/displayName: "konflux-ui-org-membership"
-    tekton.dev/categories: "Pipeline"
-    tekton.dev/tags: "config,rhads"
+    tekton.dev/displayName: 'konflux-ui-org-membership'
+    tekton.dev/categories: 'Pipeline'
+    tekton.dev/tags: 'config,rhads'
 spec:
   description: >-
     checks org membership for konflux-ui
   params:
     - name: job-spec
-      description: "Job specification metadata"
+      description: 'Job specification metadata'
       type: string
   results:
     - name: membership-result
-      description: "The RHADS configuration content (base64 encoded)"
+      description: 'The RHADS configuration content (base64 encoded)'
   steps:
     - name: check-org-membership
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
@@ -28,4 +28,47 @@ spec:
         set -euo pipefail
 
         SOURCE_REPO_URL=$(jq -r '.git.source_repo_url' <<< $JOB_SPEC)
-        echo $SOURCE_REPO_URL
+        EVENT_TYPE=$(jq -r '.git.event_type' <<< $JOB_SPEC)
+        PR_AUTHOR=$(jq -r '.git.pull_request_author' <<< $JOB_SPEC)
+        PR_LABELS=$(jq -r '.git.pull_request_labels' <<< $JOB_SPEC)
+
+        if [ "$EVENT_TYPE" != 'pull_request' ]; then
+            echo "The workflow is not triggered from PR, but $EVENT_TYPE - skipping further checks."
+            exit 0
+          fi
+
+          WHITELISTED_BOT_NAME=("red-hat-konflux[bot]" "konflux-staging[bot]")
+          REQUIRED_LABEL_NAME="ok-to-test"
+
+          ORG=$(jq -r '.git.git_org' <<< $JOB_SPEC)
+
+          if [ "$PR_AUTHOR" == "$WHITELISTED_BOT_NAME" ]; then
+            echo "PR author is "$WHITELISTED_BOT_NAME", skipping further checks."
+            exit 0
+          fi
+
+          if [[ "$PR_LABELS" == *$REQUIRED_LABEL_NAME* ]]; then
+            echo "PR has '$REQUIRED_LABEL_NAME' label, skipping further checks."
+            exit 0
+          fi
+
+          ALLOWED_USERS=("Katka92" "rrosatti" "janaki29" "sahil143" "testcara" "milantaky" "StanislavJochman" "JoaoPedroPP" "rakshett" "abhinandan13jan" "marcin-michal")
+          for author in "${ALLOWED_USERS[@]}"; do
+            if [[ "$author" == "$PR_AUTHOR" ]]; then
+              echo "PR author is in ALLOWED_USERS list. Running E2E tests."
+              exit 0
+            fi
+          done
+
+          ERROR_SUMMARY=$(cat <<EOF
+
+          ### ❌ Cannot run E2E tests - at least one of the following conditions must be met:
+          * PR author is '$WHITELISTED_BOT_NAME'
+          * PR has label '$REQUIRED_LABEL_NAME'
+          * PR author is a konflux-ui developer (listed in ALLOWED_USERS in this script)
+          EOF
+          )
+          echo "$ERROR_SUMMARY" >> $GITHUB_STEP_SUMMARY
+          echo "$ERROR_SUMMARY"
+
+          exit 1
