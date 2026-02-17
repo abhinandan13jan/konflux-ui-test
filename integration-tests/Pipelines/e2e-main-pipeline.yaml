@@ -58,3 +58,40 @@ spec:
       params:
         - name: job-spec
           value: $(tasks.test-metadata.results.job-spec)
+    - name: provision-kind-cluster
+      runAfter:
+        - check-org-membership
+      when:
+        - input: '$(tasks.test-metadata.results.pull-request-author)'
+          operator: notin
+          values: ['red-hat-konflux[bot]']
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/tekton-integration-catalog
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/mapt-oci/kind-aws-spot/provision/0.2/kind-aws-provision.yaml
+      params:
+        - name: secret-aws-credentials
+          value: mapt-kind-secret
+        - name: cluster-access-secret-name
+          value: kfg-$(context.pipelineRun.name)
+        - name: id
+          value: $(context.pipelineRun.name)
+        - name: tags
+          value: 'owner=konflux-devprod@redhat.com,project=Konflux,created-by=integration-pipeline,component=release-service-catalog'
+        - name: debug
+          value: 'false'
+        - name: ownerKind
+          value: PipelineRun
+        - name: ownerName
+          value: $(context.pipelineRun.name)
+        - name: ownerUid
+          value: $(context.pipelineRun.uid)
+        - name: oci-ref
+          value: $(params.oci-container-repo):$(context.pipelineRun.name)
+        - name: credentials-secret-name
+          value: $(params.konflux-test-infra-secret)
