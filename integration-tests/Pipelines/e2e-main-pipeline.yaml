@@ -163,9 +163,6 @@ spec:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
           operator: notin
           values: ['red-hat-konflux[bot]']
-        - input: '$(tasks.check-if-related-test.results.result)'
-          operator: in
-          values: ['true']
       taskRef:
         resolver: git
         params:
