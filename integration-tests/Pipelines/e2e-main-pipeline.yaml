@@ -154,7 +154,7 @@ spec:
             value: integration-tests/Tasks/check-org-membership.yaml
       params:
         - name: job-spec
-          value: '$(tasks.test-metadata.results.job-spec)'
+          value: '$(tasks.konflux-ui-pr-metadata.results.job-spec)'
   finally:
     - name: deprovision-kind-cluster
       when:
