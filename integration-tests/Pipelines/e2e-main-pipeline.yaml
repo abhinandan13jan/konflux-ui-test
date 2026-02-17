@@ -16,6 +16,9 @@ spec:
     - name: cloud-credential-key
       description: The key secret from konflux-test-infra-secret where all AWS ROSA configurations are stored.
       type: string
+    - name: oci-container-repo
+      default: 'quay.io/konflux-test-storage/konflux-team/release-service-catalog'
+      description: The ORAS container used to store all test artifacts.
   tasks:
     - name: test-metadata
       taskRef:
