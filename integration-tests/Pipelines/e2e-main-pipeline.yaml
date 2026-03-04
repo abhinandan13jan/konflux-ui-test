@@ -116,7 +116,7 @@ spec:
           - name: revision
             value: main
           - name: pathInRepo
-            value: tasks/konflux-ci/deploy/0.2/deploy-konflux-ci.yaml
+            value: tasks/konflux-ci/deploy/0.1/deploy-konflux-ci.yaml
       params:
         - name: cluster-access-secret
           value: kfg-$(context.pipelineRun.name)
@@ -147,7 +147,7 @@ spec:
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/check-org-membership.yaml
+            value: integration-tests/Tasks/run-e2e-konflux-ui.yaml
       params:
         - name: job-spec
           value: '$(tasks.konflux-ui-pr-metadata.results.job-spec)'
