@@ -131,7 +131,7 @@ spec:
         - name: oci-ref
           value: $(params.oci-container-repo):$(context.pipelineRun.name)
         - name: credentials-secret-name
-          value: $(params.konflux-test-infra-secret)
+          value: quay-secret
     - name: run-e2e-konflux-ui
       when:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
