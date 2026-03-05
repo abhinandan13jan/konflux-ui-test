@@ -105,6 +105,12 @@ spec:
           value: $(params.oci-container-repo):$(context.pipelineRun.name)
         - name: oci-credentials
           value: quay-secret
+        - name: cpus
+          value: '4'
+        - name: memory
+          value: '16'
+        - name: compute-sizes
+          value: 'm5.xlarge,m5a.xlarge,m5d.xlarge,m6i.xlarge,m6a.xlarge,m7i.xlarge,t3.xlarge,t3a.xlarge'
     - name: deploy-konflux
       when:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
