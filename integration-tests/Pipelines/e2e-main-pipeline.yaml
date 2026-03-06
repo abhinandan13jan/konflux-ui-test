@@ -142,25 +142,38 @@ spec:
           value: $(params.oci-container-repo):$(context.pipelineRun.name)
         - name: oci-credentials
           value: quay-secret
-    - name: run-e2e-konflux-ui
-      when:
-        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
-          operator: notin
-          values: ['red-hat-konflux[bot]']
+    - name: konflux-e2e-tests
+      timeout: 3h
       runAfter:
         - deploy-konflux
       taskRef:
         resolver: git
         params:
           - name: url
-            value: https://github.com/abhinandan13jan/konflux-ui-test
+            value: https://github.com/konflux-ci/e2e-tests
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/run-e2e-konflux-ui.yaml
+            value: integration-tests/tasks/konflux-e2e-tests/0.2/konflux-e2e-tests.yaml
       params:
+        - name: test-name
+          value: '$(context.pipelineRun.name)'
+        - name: git-repo
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-repo)'
+        - name: git-url
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-url)'
+        - name: git-revision
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-revision)'
+        - name: oras-container
+          value: '$(params.oci-container-repo):$(context.pipelineRun.name)'
         - name: job-spec
           value: '$(tasks.konflux-ui-pr-metadata.results.job-spec)'
+        - name: component-image
+          value: '$(tasks.konflux-ui-pr-metadata.results.container-image)'
+        - name: cluster-access-secret-name
+          value: kfg-$(context.pipelineRun.name)
+        - name: test-environment
+          value: 'staging'
   finally:
     - name: deprovision-kind-cluster
       when:
