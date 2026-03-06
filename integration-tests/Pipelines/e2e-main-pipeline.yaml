@@ -158,14 +158,14 @@ spec:
       params:
         - name: test-name
           value: '$(context.pipelineRun.name)'
+        - name: cluster-access-secret
+          value: kfg-$(context.pipelineRun.name)
         - name: git-repo
           value: '$(tasks.konflux-ui-pr-metadata.results.git-repo)'
         - name: git-url
           value: '$(tasks.konflux-ui-pr-metadata.results.git-url)'
         - name: git-revision
           value: '$(tasks.konflux-ui-pr-metadata.results.git-revision)'
-        - name: oras-container
-          value: '$(params.oci-container-repo):$(context.pipelineRun.name)'
         - name: job-spec
           value: '$(tasks.konflux-ui-pr-metadata.results.job-spec)'
         - name: component-image
@@ -174,6 +174,10 @@ spec:
           value: kfg-$(context.pipelineRun.name)
         - name: test-environment
           value: 'staging'
+        - name: oci-ref
+          value: $(params.oci-container-repo):$(context.pipelineRun.name)
+        - name: oci-credentials
+          value: quay-secret
   finally:
     - name: deprovision-kind-cluster
       when:
