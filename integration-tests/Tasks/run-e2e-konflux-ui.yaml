@@ -12,48 +12,48 @@ spec:
   params:
     - name: cluster-access-secret-name
       type: string
-      default: ""
-      description: "The name of the secret containing the kubeconfig to access the target cluster."
+      default: ''
+      description: 'The name of the secret containing the kubeconfig to access the target cluster.'
     - name: test-name
       type: string
-      description: "The name of the test being executed."
+      description: 'The name of the test being executed.'
     - name: git-repo
       type: string
-      default: "e2e-tests"
-      description: "The name of the Git repository containing the E2E tests."
+      default: 'e2e-tests'
+      description: 'The name of the Git repository containing the E2E tests.'
     - name: git-url
       type: string
-      default: "https://github.com/konflux-ci/e2e-tests.git"
-      description: "The URL of the Git repository containing the E2E tests."
+      default: 'https://github.com/konflux-ci/e2e-tests.git'
+      description: 'The URL of the Git repository containing the E2E tests.'
     - name: git-revision
       type: string
-      default: "main"
-      description: "The revision (branch or tag) of the Git repository to checkout."
+      default: 'main'
+      description: 'The revision (branch or tag) of the Git repository to checkout.'
     - name: oras-container
       type: string
-      description: "The URI of the OCI container registry to store test artifacts."
-      default: "quay.io/org/rhtap-e2e-artifacts"
+      description: 'The URI of the OCI container registry to store test artifacts.'
+      default: 'quay.io/org/rhtap-e2e-artifacts'
     - name: job-spec
       type: string
-      description: "The job specification containing details of the test execution."
+      description: 'The job specification containing details of the test execution.'
     - name: container-image
       type: string
-      description: "Contain the container name from Konflux Snapshot."
-      default: "quay.io/redhat-user-workloads/konflux-qe-team-tenant/konflux-e2e/konflux-e2e-tests:latest"
+      description: 'Contain the container name from Konflux Snapshot.'
+      default: 'quay.io/redhat-user-workloads/konflux-qe-team-tenant/konflux-e2e/konflux-e2e-tests:latest'
     - name: component-image
       type: string
       description: 'Container image built from any konflux git repo.'
-      default: "none"
+      default: 'none'
     - name: ginkgo-procs
-      description: "Number of processes to run in parallel in ginkgo"
+      description: 'Number of processes to run in parallel in ginkgo'
       default: 20
     - name: e2e-timeout
-      description: "Timeout value for running E2E script (cluster bootstrap + E2E tests)"
-      default: "150m"
+      description: 'Timeout value for running E2E script (cluster bootstrap + E2E tests)'
+      default: '150m'
     - name: test-environment
       type: string
       description: "Name of the environment the testing should be performed in. Use 'downstream' for testing in OpenShift CI, or 'upstream' for testing in Kind cluster."
-      default: "downstream"
+      default: 'downstream'
     - name: e2e-extra-label-filter
       type: string
       description: |
@@ -61,7 +61,7 @@ spec:
         Combined with the base label filter using '&&'. Accepts any valid Ginkgo label expression.
         Examples: "github", "gitlab", "multi-component", "github && pac-build", "github || gitlab".
         Leave empty to run all tests matching the base filter.
-      default: ""
+      default: ''
   volumes:
     - name: konflux-ci-secrets-volume
       secret:
@@ -77,16 +77,16 @@ spec:
     - name: e2e-test
       computeResources:
         requests:
-          cpu: "500m"
-          memory: "1Gi"
+          cpu: '500m'
+          memory: '1Gi'
         limits:
-          cpu: "2"
-          memory: "6Gi"
+          cpu: '2'
+          memory: '6Gi'
       image: $(params.container-image)
       volumeMounts:
         - name: konflux-ci-secrets-volume
           mountPath: /usr/local/konflux-ci-secrets
-        - name:  konflux-infra-secrets-volume
+        - name: konflux-infra-secrets-volume
           mountPath: /usr/local/konflux-test-infra
         - name: cluster-secret-volume
           mountPath: /tmp/kubeconfig
@@ -102,7 +102,7 @@ spec:
         - name: GIT_REVISION
           value: $(params.git-revision)
         - name: KONFLUX_CI
-          value: "true"
+          value: 'true'
         - name: JOB_SPEC
           value: $(params.job-spec)
         - name: COMPONENT_IMAGE
@@ -120,9 +120,9 @@ spec:
         - name: KUBECONFIG
           value: /tmp/kubeconfig
         - name: SKIP_BOOTSTRAP
-          value: "true"
+          value: 'true'
         - name: IMAGE_TAG_EXPIRATION
-          value: "5d"
+          value: '5d'
         - name: E2E_EXTRA_LABEL_FILTER
           value: $(params.e2e-extra-label-filter)
       onError: continue
@@ -130,7 +130,8 @@ spec:
         #!/bin/bash
         set -euo pipefail
         git clone --origin upstream --branch main "https://github.com/konflux-ci/konflux-ui.git" .
-
+        cd konflux-ui
+        ls
         /bin/bash -c "pr-check.sh"
     - name: secure-push-oci
       ref:
