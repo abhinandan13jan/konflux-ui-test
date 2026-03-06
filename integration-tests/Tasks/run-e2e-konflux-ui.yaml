@@ -113,7 +113,7 @@ spec:
         mountPath: /var/log-dir/
 
   steps:
-    - name: deploy
+    - name: run pr-check
       image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
       onError: continue
       workingDir: /var/workdir
@@ -125,7 +125,7 @@ spec:
         echo "listing all directories"
         ls
         echo "running pr-check"
-        /bin/bash -c "konflux-ui/pr-check.sh"
+        /bin/bash -c "pr_check.sh"
 
     - name: secure-push-oci
       ref:
