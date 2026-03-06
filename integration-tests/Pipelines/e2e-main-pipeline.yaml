@@ -142,7 +142,7 @@ spec:
           value: $(params.oci-container-repo):$(context.pipelineRun.name)
         - name: oci-credentials
           value: quay-secret
-    - name: konflux-e2e-tests
+    - name: run-e2e-konflux-ui
       timeout: 3h
       runAfter:
         - deploy-konflux
@@ -150,11 +150,11 @@ spec:
         resolver: git
         params:
           - name: url
-            value: https://github.com/konflux-ci/e2e-tests
+            value: https://github.com/abhinandan13jan/konflux-ui-test
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/tasks/konflux-e2e-tests/0.2/konflux-e2e-tests.yaml
+            value: integration-tests/Tasks/run-e2e-konflux-ui.yaml
       params:
         - name: test-name
           value: '$(context.pipelineRun.name)'
