@@ -122,7 +122,7 @@ spec:
         set -euo pipefail
         echo "cloning konflux-ui for pr-check script"
         git clone "https://github.com/konflux-ci/konflux-ui.git" .
-        echo "listing all directories"
+        echo "listing all directories - new files"
         ls
         echo "running pr-check"
         /bin/bash -c "pr_check.sh"
