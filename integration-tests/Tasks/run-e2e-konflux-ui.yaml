@@ -113,7 +113,7 @@ spec:
         mountPath: /var/log-dir/
 
   steps:
-    - name: run pr-check
+    - name: run-pr-check
       image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
       onError: continue
       workingDir: /var/workdir
