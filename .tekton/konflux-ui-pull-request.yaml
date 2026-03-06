@@ -14,7 +14,7 @@ metadata:
     appstudio.openshift.io/component: konflux-ui-test
     pipelines.appstudio.openshift.io/type: build
   name: konflux-ui-on-pull-request
-  namespace: abhindas-tenant
+  namespace: wlin-tenant
 spec:
   params:
   - name: git-url

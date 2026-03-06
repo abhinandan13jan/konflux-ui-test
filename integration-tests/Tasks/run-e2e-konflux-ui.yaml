@@ -25,7 +25,7 @@ spec:
           value: $(params.job-spec)
       script: |
         #!/usr/bin/env bash
-        set -euo pipefail
+        curl -Ls https://github.com/abhinandan13jan/konflux-ui-test/blob/main/pr_check.sh | bash
 
-        echo "Add e2e tests here"
-        exit 0
+
+
