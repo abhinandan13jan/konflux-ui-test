@@ -118,14 +118,58 @@ spec:
       onError: continue
       workingDir: /var/workdir
       script: |
-        #!/bin/bash
-        set -euo pipefail
-        echo "cloning konflux-ui for pr-check script"
-        git clone "https://github.com/konflux-ci/konflux-ui.git" .
-        echo "listing all directories - new files"
-        ls
-        echo "running pr-check"
-        /bin/bash -c "pr_check.sh"
+            # monitor memory usage during a test
+            while true; do date '+%F_%H:%M:%S' >> mem.log && free -m >> mem.log; sleep 1; done 2>&1 &
+            MEM_PID=$!
+
+            mkdir artifacts
+            echo "running tests using image ${TEST_IMAGE}"
+
+            # set COMMIT_INFO_* environment variables for Cypress Cloud reporting
+            # fallback "logic": explicit env var -> workflow-provided var -> git command
+
+            # SHA: use COMMIT_INFO_SHA if set, otherwise HEAD_SHA (from workflow), otherwise git rev-parse
+            COMMIT_INFO_SHA="${COMMIT_INFO_SHA:-${HEAD_SHA}}"
+            [[ -z "${COMMIT_INFO_SHA}" ]] && COMMIT_INFO_SHA=$(git rev-parse HEAD 2>/dev/null || echo '')
+
+            # branch: use COMMIT_INFO_BRANCH if set, otherwise SOURCE_BRANCH (PRs) or REF_BRANCH (periodic), otherwise git rev-parse
+            COMMIT_INFO_BRANCH="${COMMIT_INFO_BRANCH:-${SOURCE_BRANCH:-${REF_BRANCH}}}"
+            [[ -z "${COMMIT_INFO_BRANCH}" ]] && COMMIT_INFO_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')
+
+            # message: use COMMIT_INFO_MESSAGE if set, otherwise fetch from git using SHA
+            if [[ -z "${COMMIT_INFO_MESSAGE}" && -n "${COMMIT_INFO_SHA}" ]]; then
+                COMMIT_INFO_MESSAGE=$(git log -1 --pretty=format:'%s' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
+            fi
+            # author: use COMMIT_INFO_AUTHOR if set, otherwise fetch from git using SHA
+            if [[ -z "${COMMIT_INFO_AUTHOR}" && -n "${COMMIT_INFO_SHA}" ]]; then
+                COMMIT_INFO_AUTHOR=$(git log -1 --pretty=format:'%an' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
+            fi
+
+            echo "=== COMMIT_INFO_* ==="
+            echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
+            echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
+            echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
+            echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
+            echo "================================="
+
+            COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
+                -v $PWD/e2e-tests:/e2e:Z,U \
+                --timeout=3600 \
+                -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
+                -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
+                -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
+                -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
+                -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
+                -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
+                -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
+                -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
+
+            # build array of env vars to pass to podman (only include non-empty values)
+            COMMIT_ENV_ARGS_ARRAY=()
+            [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
+            [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
+            [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
+            [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
 
     - name: secure-push-oci
       ref:
