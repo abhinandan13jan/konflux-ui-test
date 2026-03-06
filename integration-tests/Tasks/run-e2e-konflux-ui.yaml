@@ -130,9 +130,8 @@ spec:
         #!/bin/bash
         set -euo pipefail
         git clone --origin upstream --branch main "https://github.com/konflux-ci/konflux-ui.git" .
-        cd konflux-ui
         ls
-        /bin/bash -c "pr-check.sh"
+        /bin/bash -c "konflux-ui/pr-check.sh"
     - name: secure-push-oci
       ref:
         resolver: git
