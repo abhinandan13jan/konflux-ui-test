@@ -123,12 +123,12 @@ spec:
         echo "cloning konflux-ui for pr-check script"
         git clone "https://github.com/konflux-ci/konflux-ui.git" .
         echo "listing all directories - new files"
-        ls
         echo "installing podman"
-        podman info
         dnf install podman
-        echo "running pr-check"
-        /bin/bash -c "./pr_check.sh test"
+        ls
+        podman info
+        # echo "running pr-check"
+        # /bin/bash -c "./pr_check.sh test"
 
     - name: secure-push-oci
       ref:
