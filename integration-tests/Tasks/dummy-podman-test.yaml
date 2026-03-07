@@ -129,7 +129,8 @@ spec:
         ls
         podman --version
         podman machine init
+        podman machine start
         podman system connection list
         echo "running pr-check"
-        cd 
+        podman run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
         exit 0
