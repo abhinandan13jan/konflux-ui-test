@@ -128,8 +128,6 @@ spec:
         echo "lising updates"
         ls
         podman --version
-        podman machine init
-        podman machine start
         podman system connection list
         echo "running pr-check"
         podman run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
