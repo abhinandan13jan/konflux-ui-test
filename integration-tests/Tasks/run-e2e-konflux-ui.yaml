@@ -125,8 +125,7 @@ spec:
         echo "listing all directories - new files"
         ls
         echo "running pr-check"
-        sudo dnf install podman
-        sudo apt install podman
+        dnf install podman
         /bin/bash -c "./pr_check.sh test"
 
     - name: secure-push-oci
