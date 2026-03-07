@@ -166,14 +166,8 @@ spec:
       script: |
         #!/bin/bash
         # monitor memory usage during a test
-        
+
         echo "installing podman"
-        dnf install -y container-tools
-        echo "lising updates"
-        ls
-        podman --version
-        podman machine init
-        podman machine start
         while true; do date '+%F_%H:%M:%S' >> mem.log && free -m >> mem.log; sleep 1; done 2>&1 &
         MEM_PID=$!
 
@@ -244,7 +238,7 @@ spec:
                 ;;
         esac
         echo "Running tests from ${SPEC_FILE}"
-        podman run "${TEST_IMAGE}" "${SPEC_FILE}"
+        podman run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest" "apple"
 
             PODMAN_RETURN_CODE=$?
 
