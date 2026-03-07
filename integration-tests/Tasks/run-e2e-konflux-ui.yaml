@@ -237,7 +237,7 @@ spec:
                 ;;
         esac
         echo "Running tests from ${SPEC_FILE}"
-        podman run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest" "apple"
+        podman run -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
 
             PODMAN_RETURN_CODE=$?
 
