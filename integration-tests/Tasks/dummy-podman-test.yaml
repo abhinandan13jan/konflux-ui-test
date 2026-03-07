@@ -1,0 +1,135 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: dummy-podman-test
+  labels:
+    konflux-ci/kind: 'true'
+    app.kubernetes.io/version: '0.2'
+    upstream-usable: 'true'
+  annotations:
+    tekton.dev/pipelines.minVersion: '0.44.x'
+    tekton.dev/tags: konflux
+spec:
+  description: |
+    This task performs a full Konflux CI deployment. It clones the specified Git repository,
+    checks out the desired branch, and runs deployment scripts using a kubeconfig retrieved from
+    a Kubernetes secret. It is intended for use in OpenShift Pipelines or other Tekton environments.
+
+  params:
+    - name: cluster-access-secret
+      description: Name of the Kubernetes Secret that contains the kubeconfig (base64 encoded) used to access the target cluster.
+    - name: repo-url
+      description: URL of the Git repository containing the Konflux CI deployment scripts.
+      default: https://github.com/konflux-ci/konflux-ci.git
+    - name: repo-branch
+      description: Git branch to check out when cloning the repository.
+      default: main
+    - name: test-name
+      type: string
+      description: 'The name of the test being executed.'
+    - name: git-repo
+      type: string
+      default: 'e2e-tests'
+      description: 'The name of the Git repository containing the E2E tests.'
+    - name: git-url
+      type: string
+      default: 'https://github.com/konflux-ci/e2e-tests.git'
+      description: 'The URL of the Git repository containing the E2E tests.'
+    - name: git-revision
+      type: string
+      default: 'main'
+      description: 'The revision (branch or tag) of the Git repository to checkout.'
+    - name: component-image
+      type: string
+      description: 'Container image built from any konflux git repo.'
+      default: 'none'
+    - name: e2e-timeout
+      description: 'Timeout value for running E2E script (cluster bootstrap + E2E tests)'
+      default: '150m'
+    - name: test-environment
+      type: string
+      description: "Name of the environment the testing should be performed in. Use 'downstream' for testing in OpenShift CI, or 'upstream' for testing in Kind cluster."
+      default: 'staging'
+    - name: component-name
+      description: |
+        The GitHub repository name of the Konflux CI component to customize (e.g., `build-service`, `release-service`).
+        Used for applying image or Kubernetes manifest overrides.
+      default: ''
+    - name: component-image-repository
+      description: |
+        Overrides the container image repository for the `component-name` (e.g., `quay.io/my-org/my-custom-image`).
+      default: ''
+    - name: component-image-tag
+      description: |
+        Overrides the container image tag for the `component-name` (e.g., `latest`, `my-feature-branch`).
+      default: ''
+    - name: component-pr-owner
+      description: |
+        GitHub owner (user|org) of the fork/PR providing custom Kubernetes manifests for the `component-name`.
+      default: ''
+    - name: component-pr-sha
+      description: |
+        Commit SHA of the PR (from `component-pr-owner`) supplying custom Kubernetes manifests for the `component-name`.
+      default: ''
+    - name: component-pr-source-branch
+      description: |
+        GitHub source branch of the pull request.
+      default: ''
+    - name: oci-ref
+      type: string
+      description: Full OCI artifact reference in a format "quay.io/org/repo:tag. It's used for storing logs from the Task's Steps
+    - name: oci-credentials
+      type: string
+      description: |
+        The secret name containing credentials for container registry where the artifacts will be stored.
+        The secret should contain `data.oci-storage-dockerconfigjson: <dockerconfigjson-content>`
+      default: 'konflux-test-infra'
+
+  volumes:
+    - name: credentials
+      secret:
+        secretName: $(params.cluster-access-secret)
+    - name: workdir
+      emptyDir: {}
+    - name: logs
+      emptyDir: {}
+    - name: konflux-test-infra-volume
+      secret:
+        secretName: $(params.oci-credentials)
+
+  stepTemplate:
+    env:
+      - name: KUBECONFIG
+        value: '/credentials/kubeconfig'
+      - name: LOG_FILENAME
+        value: '/var/log-dir/deploy-konflux-ci.log'
+    volumeMounts:
+      - name: credentials
+        mountPath: /credentials
+      - name: workdir
+        mountPath: /var/workdir
+      - name: logs
+        mountPath: /var/log-dir/
+
+  steps:
+    - name: setup-pr-tests
+      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+      onError: continue
+      workingDir: /var/workdir
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+        echo "cloning konflux-ui for pr-check script"
+        git clone "https://github.com/konflux-ci/konflux-ui.git" .
+        echo "listing all directories - new files"
+        echo "installing podman"
+        dnf install -y container-tools
+        echo "lising updates"
+        ls
+        podman --version
+        podman machine init
+        podman system connection list
+        echo "running pr-check"
+        cd 
+        exit 0
