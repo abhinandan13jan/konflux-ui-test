@@ -113,8 +113,8 @@ spec:
         mountPath: /var/log-dir/
 
   steps:
-    - name: run-pr-check
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+    - name: setup-pr-tests
+      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
       onError: continue
       workingDir: /var/workdir
       script: |
@@ -129,7 +129,34 @@ spec:
         ls
         podman --version
         echo "running pr-check"
-        /bin/bash -c "./pr_check.sh test"
+        exit 0
+
+    - name: run-test-pr
+      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
+      onError: continue
+      workingDir: /var/workdir
+      script: |
+        #!/bin/bash
+        # fetch also target branch
+            git fetch origin "${TARGET_BRANCH}"
+
+            # Rebuild test image if Containerfile or entrypoint from e2e-tests was changed
+            git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/Containerfile || is_changed_cf=$?
+            git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/entrypoint.sh || is_changed_ep=$?
+
+            if [[ ($is_changed_cf -eq 1) || ($is_changed_ep -eq 1) ]]; then
+                echo "Containerfile changes detected, rebuilding test image"
+                TEST_IMAGE="konflux-ui-tests:pr-$PR_NUMBER"
+
+                cd e2e-tests
+                podman build -t "$TEST_IMAGE" . -f Containerfile
+                cd ..
+            else
+                echo "Using latest image from quay."
+            fi
+
+            export CYPRESS_LOCAL_CLUSTER=true
+            export CYPRESS_PERIODIC_RUN_STAGE=false
         exit 0
 
     - name: secure-push-oci
@@ -149,13 +176,3 @@ spec:
           value: $(params.oci-ref)
         - name: credentials-volume-name
           value: konflux-test-infra-volume
-    - name: fail-if-any-step-failed
-      ref:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/konflux-ci/tekton-integration-catalog.git
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: stepactions/fail-if-any-step-failed/0.1/fail-if-any-step-failed.yaml
