@@ -123,11 +123,6 @@ spec:
         echo "cloning konflux-ui for pr-check script"
         git clone "https://github.com/konflux-ci/konflux-ui.git" .
         echo "listing all directories - new files"
-        echo "installing podman"
-        dnf install -y container-tools
-        echo "lising updates"
-        ls
-        podman --version
         echo "running pr-check"
         exit 0
 
@@ -168,6 +163,10 @@ spec:
         # monitor memory usage during a test
 
         echo "installing podman"
+        dnf install -y container-tools
+        echo "lising updates"
+        ls
+        podman --version
         while true; do date '+%F_%H:%M:%S' >> mem.log && free -m >> mem.log; sleep 1; done 2>&1 &
         MEM_PID=$!
 
