@@ -166,6 +166,7 @@ spec:
       script: |
         #!/bin/bash
         # monitor memory usage during a test
+        
         echo "installing podman"
         dnf install -y container-tools
         echo "lising updates"
