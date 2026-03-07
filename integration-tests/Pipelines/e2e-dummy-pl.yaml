@@ -54,7 +54,7 @@ spec:
           value: $(params.SNAPSHOT)
     - name: provision-kind-cluster
       runAfter:
-        - check-org-membership
+        - konflux-ui-pr-metadata
       when:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
           operator: notin
