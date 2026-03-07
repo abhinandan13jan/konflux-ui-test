@@ -235,7 +235,7 @@ spec:
         echo "Running tests from ${SPEC_FILE}"
         podman run --network=host ${COMMON_SETUP} "${COMMIT_ENV_ARGS_ARRAY[@]}" "${TEST_IMAGE}" "${SPEC_FILE}"
 
-            PODMAN_RETURN_CODE=$?
+        PODMAN_RETURN_CODE=$?
 
         if [[ $PODMAN_RETURN_CODE -ne 0 ]]; then
             case $PODMAN_RETURN_CODE in
