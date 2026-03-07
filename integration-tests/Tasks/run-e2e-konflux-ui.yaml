@@ -124,11 +124,14 @@ spec:
         git clone "https://github.com/konflux-ci/konflux-ui.git" .
         echo "listing all directories - new files"
         echo "installing podman"
-        dnf install podman
+        dnf install -y container-tools
+        echo "lising updates"
         ls
+        podman version
         podman info
         # echo "running pr-check"
         # /bin/bash -c "./pr_check.sh test"
+        exit 0
 
     - name: secure-push-oci
       ref:
