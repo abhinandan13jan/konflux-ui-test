@@ -241,7 +241,7 @@ spec:
                 ;;
         esac
         echo "Running tests from ${SPEC_FILE}"
-        podman run --network=host ${COMMON_SETUP} "${COMMIT_ENV_ARGS_ARRAY[@]}" "${TEST_IMAGE}" "${SPEC_FILE}"
+        podman run "${TEST_IMAGE}" "${SPEC_FILE}"
 
             PODMAN_RETURN_CODE=$?
 
