@@ -163,7 +163,7 @@ spec:
         # monitor memory usage during a test
 
         echo "installing podman"
-        dnf install -y container-tools
+        dnf install -y podman
         echo "lising updates"
         ls
         podman --version
