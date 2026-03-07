@@ -124,39 +124,11 @@ spec:
         git clone "https://github.com/konflux-ci/konflux-ui.git" .
         echo "listing all directories - new files"
         echo "installing podman"
-        dnf install -y container-tools
+        dnf install -y podman
         echo "lising updates"
         ls
         podman --version
         echo "running pr-check"
-        exit 0
-
-    - name: run-test-pr
-      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
-      onError: continue
-      workingDir: /var/workdir
-      script: |
-        #!/bin/bash
-        # fetch also target branch
-            git fetch origin "${TARGET_BRANCH}"
-
-            # Rebuild test image if Containerfile or entrypoint from e2e-tests was changed
-            git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/Containerfile || is_changed_cf=$?
-            git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/entrypoint.sh || is_changed_ep=$?
-
-            if [[ ($is_changed_cf -eq 1) || ($is_changed_ep -eq 1) ]]; then
-                echo "Containerfile changes detected, rebuilding test image"
-                TEST_IMAGE="konflux-ui-tests:pr-$PR_NUMBER"
-
-                cd e2e-tests
-                podman build -t "$TEST_IMAGE" . -f Containerfile
-                cd ..
-            else
-                echo "Using latest image from quay."
-            fi
-
-            export CYPRESS_LOCAL_CLUSTER=true
-            export CYPRESS_PERIODIC_RUN_STAGE=false
         exit 0
 
     - name: execute-test
@@ -166,6 +138,31 @@ spec:
       script: |
         #!/bin/bash
         # monitor memory usage during a test
+        echo "installing podman"
+        dnf install -y podman
+        echo "lising updates"
+        ls
+        podman --version
+        # fetch also target branch
+        git fetch origin "${TARGET_BRANCH}"
+
+        # Rebuild test image if Containerfile or entrypoint from e2e-tests was changed
+        git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/Containerfile || is_changed_cf=$?
+        git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/entrypoint.sh || is_changed_ep=$?
+
+        if [[ ($is_changed_cf -eq 1) || ($is_changed_ep -eq 1) ]]; then
+            echo "Containerfile changes detected, rebuilding test image"
+            TEST_IMAGE="konflux-ui-tests:pr-$PR_NUMBER"
+
+            cd e2e-tests
+            podman build -t "$TEST_IMAGE" . -f Containerfile
+            cd ..
+        else
+            echo "Using latest image from quay."
+        fi
+
+        export CYPRESS_LOCAL_CLUSTER=true
+        export CYPRESS_PERIODIC_RUN_STAGE=false
         while true; do date '+%F_%H:%M:%S' >> mem.log && free -m >> mem.log; sleep 1; done 2>&1 &
         MEM_PID=$!
 
@@ -239,7 +236,7 @@ spec:
         podman run --network=host ${COMMON_SETUP} "${COMMIT_ENV_ARGS_ARRAY[@]}" "${TEST_IMAGE}" "${SPEC_FILE}"
 
             PODMAN_RETURN_CODE=$?
-            
+
         if [[ $PODMAN_RETURN_CODE -ne 0 ]]; then
             case $PODMAN_RETURN_CODE in
                 255)
