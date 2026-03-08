@@ -129,7 +129,9 @@ spec:
         dnf install -y podman
         echo "lising updates"
         ls
-        usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)""
+        echo "changing usermod"
+        usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+        echo "getting podman version"
         podman --version
         podman system connection list
         echo "running pr-check"
