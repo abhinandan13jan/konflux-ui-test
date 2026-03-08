@@ -5,10 +5,15 @@ metadata:
 spec:
   steps:
     - name: run-podman
-      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
+      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
       onError: continue
       workingDir: /var/workdir
       script: |
         #!/bin/sh
         ls
-        exit 0
+        echo "installing dnf plugins core"
+        dnf -y install dnf-plugins-core
+        echo "installing config manager"
+        dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+        echo "installing docker"
+        dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
