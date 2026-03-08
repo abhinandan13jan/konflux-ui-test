@@ -119,14 +119,14 @@ spec:
       # image: #TO-DO - update with user generated image
       image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
       onError: continue
-      workingDir: /var/workdir
       script: |
         #!/bin/bash
         set -euo pipefail
+        ls
         echo "running pr-check"
         # Add logic for spec file here
+        export CYPRESS_GH_TOKEN='asdf'
         ./entrypoint.sh ./e2e/tests/basic-happy-path.spec.ts
-        exit 0
         exit 0
 
     # - name: run-test-pr
