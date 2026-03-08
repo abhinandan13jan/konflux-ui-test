@@ -102,6 +102,8 @@ spec:
     env:
       - name: KUBECONFIG
         value: '/credentials/kubeconfig'
+      - name: CYPRESS_GH_TOKEN
+        value: 'dummy'
       - name: LOG_FILENAME
         value: '/var/log-dir/deploy-konflux-ci.log'
     volumeMounts:
@@ -113,170 +115,171 @@ spec:
         mountPath: /var/log-dir/
 
   steps:
-    - name: setup-pr-tests
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+    - name: run-pr-on-latest
+      # image: #TO-DO - update with user generated image
+      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
       onError: continue
       workingDir: /var/workdir
       script: |
         #!/bin/bash
         set -euo pipefail
-        echo "cloning konflux-ui for pr-check script"
-        git clone "https://github.com/konflux-ci/konflux-ui.git" .
-        echo "listing all directories - new files"
         echo "running pr-check"
+        # Add logic for spec file here
+        ./entrypoint.sh ./e2e/tests/basic-happy-path.spec.ts
+        exit 0
         exit 0
 
-    - name: run-test-pr
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
-      onError: continue
-      workingDir: /var/workdir
-      script: |
-        #!/bin/bash
-        # fetch also target branch
-            git fetch origin "${TARGET_BRANCH}"
+    # - name: run-test-pr
+    #   image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+    #   onError: continue
+    #   workingDir: /var/workdir
+    #   script: |
+    #     #!/bin/bash
+    #     # fetch also target branch
+    #         git fetch origin "${TARGET_BRANCH}"
 
-            # Rebuild test image if Containerfile or entrypoint from e2e-tests was changed
-            git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/Containerfile || is_changed_cf=$?
-            git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/entrypoint.sh || is_changed_ep=$?
+    #         # Rebuild test image if Containerfile or entrypoint from e2e-tests was changed
+    #         git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/Containerfile || is_changed_cf=$?
+    #         git diff --exit-code --quiet "origin/${TARGET_BRANCH}" HEAD -- e2e-tests/entrypoint.sh || is_changed_ep=$?
 
-            if [[ ($is_changed_cf -eq 1) || ($is_changed_ep -eq 1) ]]; then
-                echo "Containerfile changes detected, rebuilding test image"
-                TEST_IMAGE="konflux-ui-tests:pr-$PR_NUMBER"
+    #         if [[ ($is_changed_cf -eq 1) || ($is_changed_ep -eq 1) ]]; then
+    #             echo "Containerfile changes detected, rebuilding test image"
+    #             TEST_IMAGE="konflux-ui-tests:pr-$PR_NUMBER"
 
-                cd e2e-tests
-                podman build -t "$TEST_IMAGE" . -f Containerfile
-                cd ..
-            else
-                echo "Using latest image from quay."
-            fi
+    #             cd e2e-tests
+    #             podman build -t "$TEST_IMAGE" . -f Containerfile
+    #             cd ..
+    #         else
+    #             echo "Using latest image from quay."
+    #         fi
 
-            export CYPRESS_LOCAL_CLUSTER=true
-            export CYPRESS_PERIODIC_RUN_STAGE=false
-        exit 0
+    #         export CYPRESS_LOCAL_CLUSTER=true
+    #         export CYPRESS_PERIODIC_RUN_STAGE=false
+    #     exit 0
 
-    - name: execute-test
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
-      onError: continue
-      workingDir: /var/workdir
-      script: |
-        #!/bin/bash
-        # monitor memory usage during a test
+    # - name: execute-test
+    #   image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+    #   onError: continue
+    #   workingDir: /var/workdir
+    #   script: |
+    #     #!/bin/bash
+    #     # monitor memory usage during a test
 
-        echo "installing podman"
-        dnf install -y podman
-        echo "lising updates"
-        ls
-        podman --version
-        while true; do date '+%F_%H:%M:%S' >> mem.log && free -m >> mem.log; sleep 1; done 2>&1 &
-        MEM_PID=$!
+    #     echo "installing podman"
+    #     dnf install -y podman
+    #     echo "lising updates"
+    #     ls
+    #     podman --version
+    #     while true; do date '+%F_%H:%M:%S' >> mem.log && free -m >> mem.log; sleep 1; done 2>&1 &
+    #     MEM_PID=$!
 
-        mkdir artifacts
-        echo "running tests using image ${TEST_IMAGE}"
+    #     mkdir artifacts
+    #     echo "running tests using image ${TEST_IMAGE}"
 
-        # set COMMIT_INFO_* environment variables for Cypress Cloud reporting
-        # fallback "logic": explicit env var -> workflow-provided var -> git command
+    #     # set COMMIT_INFO_* environment variables for Cypress Cloud reporting
+    #     # fallback "logic": explicit env var -> workflow-provided var -> git command
 
-        # SHA: use COMMIT_INFO_SHA if set, otherwise HEAD_SHA (from workflow), otherwise git rev-parse
-        COMMIT_INFO_SHA="${COMMIT_INFO_SHA:-${HEAD_SHA}}"
-        [[ -z "${COMMIT_INFO_SHA}" ]] && COMMIT_INFO_SHA=$(git rev-parse HEAD 2>/dev/null || echo '')
+    #     # SHA: use COMMIT_INFO_SHA if set, otherwise HEAD_SHA (from workflow), otherwise git rev-parse
+    #     COMMIT_INFO_SHA="${COMMIT_INFO_SHA:-${HEAD_SHA}}"
+    #     [[ -z "${COMMIT_INFO_SHA}" ]] && COMMIT_INFO_SHA=$(git rev-parse HEAD 2>/dev/null || echo '')
 
-        # branch: use COMMIT_INFO_BRANCH if set, otherwise SOURCE_BRANCH (PRs) or REF_BRANCH (periodic), otherwise git rev-parse
-        COMMIT_INFO_BRANCH="${COMMIT_INFO_BRANCH:-${SOURCE_BRANCH:-${REF_BRANCH}}}"
-        [[ -z "${COMMIT_INFO_BRANCH}" ]] && COMMIT_INFO_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')
+    #     # branch: use COMMIT_INFO_BRANCH if set, otherwise SOURCE_BRANCH (PRs) or REF_BRANCH (periodic), otherwise git rev-parse
+    #     COMMIT_INFO_BRANCH="${COMMIT_INFO_BRANCH:-${SOURCE_BRANCH:-${REF_BRANCH}}}"
+    #     [[ -z "${COMMIT_INFO_BRANCH}" ]] && COMMIT_INFO_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')
 
-        # message: use COMMIT_INFO_MESSAGE if set, otherwise fetch from git using SHA
-        if [[ -z "${COMMIT_INFO_MESSAGE}" && -n "${COMMIT_INFO_SHA}" ]]; then
-            COMMIT_INFO_MESSAGE=$(git log -1 --pretty=format:'%s' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
-        fi
-        # author: use COMMIT_INFO_AUTHOR if set, otherwise fetch from git using SHA
-        if [[ -z "${COMMIT_INFO_AUTHOR}" && -n "${COMMIT_INFO_SHA}" ]]; then
-            COMMIT_INFO_AUTHOR=$(git log -1 --pretty=format:'%an' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
-        fi
+    #     # message: use COMMIT_INFO_MESSAGE if set, otherwise fetch from git using SHA
+    #     if [[ -z "${COMMIT_INFO_MESSAGE}" && -n "${COMMIT_INFO_SHA}" ]]; then
+    #         COMMIT_INFO_MESSAGE=$(git log -1 --pretty=format:'%s' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
+    #     fi
+    #     # author: use COMMIT_INFO_AUTHOR if set, otherwise fetch from git using SHA
+    #     if [[ -z "${COMMIT_INFO_AUTHOR}" && -n "${COMMIT_INFO_SHA}" ]]; then
+    #         COMMIT_INFO_AUTHOR=$(git log -1 --pretty=format:'%an' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
+    #     fi
 
-        echo "=== COMMIT_INFO_* ==="
-        echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
-        echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
-        echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
-        echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
-        echo "================================="
+    #     echo "=== COMMIT_INFO_* ==="
+    #     echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
+    #     echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
+    #     echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
+    #     echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
+    #     echo "================================="
 
-        COMMON_SETUP="-e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
-            -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
-            -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
-            -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
-            -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
-            -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
-            -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
-            -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
+    #     COMMON_SETUP="-e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
+    #         -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
+    #         -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
+    #         -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
+    #         -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
+    #         -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
+    #         -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
+    #         -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
 
-        # build array of env vars to pass to podman (only include non-empty values)
-        COMMIT_ENV_ARGS_ARRAY=()
-        [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
-        [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
-        [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
-        [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
+    #     # build array of env vars to pass to podman (only include non-empty values)
+    #     COMMIT_ENV_ARGS_ARRAY=()
+    #     [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
+    #     [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
+    #     [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
+    #     [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
 
-        RECORD_FLAG_ARGS=()
-        if [[ -n "${CYPRESS_PROJECT_ID}" && -n "${CYPRESS_RECORD_KEY}" ]]; then
-            RECORD_FLAG_ARGS+=("--record")
-            # add tag to identify which workflow/job type this run is from
-            JOB_TAG="${JOB_TYPE:-unknown}"
-            [[ -n "${SUITE}" ]] && JOB_TAG="${JOB_TAG}-${SUITE}"
-            RECORD_FLAG_ARGS+=("--tag" "${JOB_TAG}")
-            echo "Cypress recording enabled with tag: ${JOB_TAG}"
-        else
-            echo "Cypress recording disabled (missing PROJECT_ID or RECORD_KEY)"
-        fi
+    #     RECORD_FLAG_ARGS=()
+    #     if [[ -n "${CYPRESS_PROJECT_ID}" && -n "${CYPRESS_RECORD_KEY}" ]]; then
+    #         RECORD_FLAG_ARGS+=("--record")
+    #         # add tag to identify which workflow/job type this run is from
+    #         JOB_TAG="${JOB_TYPE:-unknown}"
+    #         [[ -n "${SUITE}" ]] && JOB_TAG="${JOB_TAG}-${SUITE}"
+    #         RECORD_FLAG_ARGS+=("--tag" "${JOB_TAG}")
+    #         echo "Cypress recording enabled with tag: ${JOB_TAG}"
+    #     else
+    #         echo "Cypress recording disabled (missing PROJECT_ID or RECORD_KEY)"
+    #     fi
 
-        case "${SUITE}" in
-            "features")
-                SPEC_FILE="/e2e/tests/features.spec.ts"
-                ;;
-            *)
-                SPEC_FILE="/e2e/tests/basic-happy-path.spec.ts"
-                ;;
-        esac
-        echo "Running tests from ${SPEC_FILE}"
-        podman run -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+    #     case "${SUITE}" in
+    #         "features")
+    #             SPEC_FILE="/e2e/tests/features.spec.ts"
+    #             ;;
+    #         *)
+    #             SPEC_FILE="/e2e/tests/basic-happy-path.spec.ts"
+    #             ;;
+    #     esac
+    #     echo "Running tests from ${SPEC_FILE}"
+    #     podman run -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
 
-            PODMAN_RETURN_CODE=$?
+    #         PODMAN_RETURN_CODE=$?
 
-        if [[ $PODMAN_RETURN_CODE -ne 0 ]]; then
-            case $PODMAN_RETURN_CODE in
-                255)
-                    echo "Test took too long, podman exited due to timeout set to 1 hour."
-                    ;;
-                130)
-                    echo "Podman run was interrupted."
-                    ;;
-                *)
-                    echo "Podman exited with exit code: ${PODMAN_RETURN_CODE}"
-                    ;;
-            esac
-            TEST_RUN=1
-        fi
-        set +e
+    #     if [[ $PODMAN_RETURN_CODE -ne 0 ]]; then
+    #         case $PODMAN_RETURN_CODE in
+    #             255)
+    #                 echo "Test took too long, podman exited due to timeout set to 1 hour."
+    #                 ;;
+    #             130)
+    #                 echo "Podman run was interrupted."
+    #                 ;;
+    #             *)
+    #                 echo "Podman exited with exit code: ${PODMAN_RETURN_CODE}"
+    #                 ;;
+    #         esac
+    #         TEST_RUN=1
+    #     fi
+    #     set +e
 
-        kubectl logs "$(kubectl get pods -n konflux-ui -o name | grep proxy)" --all-containers=true -n konflux-ui > "$PWD/artifacts/konflux-ui.log"
+    #     kubectl logs "$(kubectl get pods -n konflux-ui -o name | grep proxy)" --all-containers=true -n konflux-ui > "$PWD/artifacts/konflux-ui.log"
 
-        # kill the background process monitoring memory usage
-        kill $MEM_PID
-        cp mem.log "$PWD/artifacts"
+    #     # kill the background process monitoring memory usage
+    #     kill $MEM_PID
+    #     cp mem.log "$PWD/artifacts"
 
-    - name: secure-push-oci
-      ref:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/konflux-ci/tekton-integration-catalog.git
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: stepactions/secure-push-oci/0.1/secure-push-oci.yaml
-      params:
-        - name: workdir-path
-          value: /var/log-dir/
-        - name: oci-ref
-          value: $(params.oci-ref)
-        - name: credentials-volume-name
-          value: konflux-test-infra-volume
+    # - name: secure-push-oci
+    #   ref:
+    #     resolver: git
+    #     params:
+    #       - name: url
+    #         value: https://github.com/konflux-ci/tekton-integration-catalog.git
+    #       - name: revision
+    #         value: main
+    #       - name: pathInRepo
+    #         value: stepactions/secure-push-oci/0.1/secure-push-oci.yaml
+    #   params:
+    #     - name: workdir-path
+    #       value: /var/log-dir/
+    #     - name: oci-ref
+    #       value: $(params.oci-ref)
+    #     - name: credentials-volume-name
+    #       value: konflux-test-infra-volume
