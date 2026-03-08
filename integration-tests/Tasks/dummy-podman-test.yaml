@@ -123,15 +123,15 @@ spec:
         echo "cloning konflux-ui for pr-check script"
         git clone "https://github.com/konflux-ci/konflux-ui.git" .
         echo "listing all directories - new files"
-        docker info
-        docker run -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
-        # echo "installing podman"
-        # dnf install -y podman
-        # echo "lising updates"
-        # ls
-        # usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)""
-        # podman --version
-        # podman system connection list
-        # echo "running pr-check"
-        # podman run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+        # docker info
+        # docker run -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+        echo "installing podman"
+        dnf install -y podman
+        echo "lising updates"
+        ls
+        usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)""
+        podman --version
+        podman system connection list
+        echo "running pr-check"
+        podman run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
         exit 0
