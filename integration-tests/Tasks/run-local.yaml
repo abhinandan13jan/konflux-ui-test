@@ -5,7 +5,7 @@ metadata:
 spec:
   steps:
     - name: run-podman
-      image: quay.io/carawang/konflux-ui-test:dummy-konflux-podman-8xmns
+      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
       # image: alpine
       onError: continue
       # workingDir: /var/workdir
@@ -16,7 +16,6 @@ spec:
           whoami
           ls
           echo "running pr-check"
-          yarn start
           cd ./artifacts
           ls
           cd ../
