@@ -11,11 +11,10 @@ spec:
       script: |
         #!/bin/sh
         ls
-        echo "installing dnf plugins core"
-        dnf -y install dnf-plugins-core
-        echo "installing config manager"
-        dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+        whoami
+        echo "installing podman and shadow tools"
+        dnf install -y podman shadow-utils
+        echo "update subuid"
+        usermod --add-subuids 100000-165535 --add-subgids 100000-165535 $(whoami)
         echo "installing docker"
-        dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        systemctl start docker
-        docker info
+        podman run hello-world
