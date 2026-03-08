@@ -16,5 +16,5 @@ spec:
           whoami
           ls
           echo "running pr-check"
-          entrypoint ./e2e/tests/basic-happy-path.spec.ts
+          ./entrypoint.sh ./e2e/tests/basic-happy-path.spec.ts
           exit 0
