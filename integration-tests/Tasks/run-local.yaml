@@ -15,8 +15,6 @@ spec:
           cat /etc/os-release
           whoami
           ls
-          # echo "cloning konflux-ui for pr-check script"
-          # git clone "https://github.com/konflux-ci/konflux-ui.git" .
-          # echo "listing all directories - new files"
-          # echo "running pr-check"
+          echo "running pr-check"
+          ./e2e/tests/basic-happy-path.spec.ts
           exit 0
