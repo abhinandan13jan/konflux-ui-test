@@ -15,18 +15,14 @@ spec:
         cat /etc/os-release
         echo "installing podman and shadow tools"
         dnf install -y podman shadow-utils
-        # Podman might need this
-        dnf reinstall -y shadow-utils
-
-        # Allowing the files to be executed by all users
+        echo "current subuid"
+        grep $(whoami) /etc/subuid
+        grep $(whoami) /etc/subgid
+        echo "updating subuid"
+        usermod --add-subuids 200000-400000 --add-subgids 200000-400000 $(whoami)
+        echo "new subuid"
+        grep $(whoami) /etc/subuid
+        grep $(whoami) /etc/subgid
         chmod 0755 /usr/bin/newuidmap /usr/bin/newgidmap
-
-        # Setting needed capacity
-        setcap cap_setuid+ep /usr/bin/newuidmap
-        setcap cap_setgid+ep /usr/bin/newgidmap
-
-        # Removing Setuid and Setgid bits
-        chmod -s /usr/bin/newuidmap
-        chmod -s /usr/bin/newgidmap
         echo "run podman hello world"
-        podman run --userns=auto hello-world
+        podman run hello-world
