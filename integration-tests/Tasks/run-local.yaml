@@ -11,13 +11,8 @@ spec:
       script: |
         #!/bin/sh
         ls
-        echo "installing dnf plugins core"
-        dnf -y install dnf-plugins-core
-        echo "installing config manager"
-        dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
         echo "installing docker"
-        dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        dockerd-rootless-setuptool.sh install
+        curl -fsSL https://get.docker.com/rootless | sh
         systemctl --user start docker
         systemctl --user enable docker
         loginctl enable-linger $(whoami)
