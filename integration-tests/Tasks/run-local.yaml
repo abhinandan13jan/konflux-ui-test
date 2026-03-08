@@ -18,7 +18,7 @@ spec:
         grep $(whoami) /etc/subuid
         grep $(whoami) /etc/subgid
         echo "updating subuid"
-        usermod --add-subuids 100000-200000 --add-subgids 100000-200000 $(whoami)
+        usermod --add-subuids 200000-400000 --add-subgids 200000-400000 $(whoami)
         echo "new subuid"
         grep $(whoami) /etc/subuid
         grep $(whoami) /etc/subgid
