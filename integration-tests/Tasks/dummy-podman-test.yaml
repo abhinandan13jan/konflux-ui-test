@@ -125,20 +125,24 @@ spec:
         echo "listing all directories - new files"
         # docker info
         # docker run -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
-        echo "installing buildah & podman"
+        echo "installing buildah"
+        dnf install -y buildah
+        buildah -v
+        echo "installing podman"
         dnf install -y podman
         podman --version
         echo "running podman top"
         podman top
-        podman run quay.io/podman/hello
-        echo "verify shadow-utils"
-        rpm -q shadow-utils
-        echo "install docker"
-        dnf remove docker* podman* runc
-        dnf update -y
-        dnf install -y yum-utils
-        dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-        dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin shadow-utils
-        echo "running podman"
-        # buildah run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+        podman build -t "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+        # podman run quay.io/podman/hello
+        # echo "verify shadow-utils"
+        # rpm -q shadow-utils
+        # echo "install docker"
+        # dnf remove docker* podman* runc
+        # dnf update -y
+        # dnf install -y yum-utils
+        # dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+        # dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin shadow-utils
+        # echo "running podman"
+        # # buildah run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
         exit 0
