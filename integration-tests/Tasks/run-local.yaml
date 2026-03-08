@@ -24,6 +24,6 @@ spec:
         grep $(whoami) /etc/subuid
         grep $(whoami) /etc/subgid
         echo "changing permissions"
-        chmod 0755 /usr/bin/newuidmap /usr/bin/newgidmap
+        chmod 0777 /usr/bin/newuidmap /usr/bin/newgidmap
         echo "run podman hello world"
         podman run hello-world
