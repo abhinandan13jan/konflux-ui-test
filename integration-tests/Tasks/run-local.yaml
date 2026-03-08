@@ -4,7 +4,7 @@ metadata:
   name: run-local
 spec:
   steps:
-    - name: run-podman
+    - name: run-docker
       image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
       # image: alpine
       onError: continue
