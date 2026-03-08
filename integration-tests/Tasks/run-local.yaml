@@ -8,13 +8,14 @@ spec:
       image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
       # image: alpine
       onError: continue
-      workingDir: /var/workdir
+      # workingDir: /var/workdir
       script: |
          #!/bin/bash
           set -euo pipefail
           cat /etc/os-release
+          whoami
           echo "cloning konflux-ui for pr-check script"
-          sudo git clone "https://github.com/konflux-ci/konflux-ui.git" .
+          git clone "https://github.com/konflux-ci/konflux-ui.git" .
           echo "listing all directories - new files"
           echo "running pr-check"
           exit 0
