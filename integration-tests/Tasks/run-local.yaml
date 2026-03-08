@@ -5,7 +5,8 @@ metadata:
 spec:
   steps:
     - name: run-podman
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+      # image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+      image: alpine
       onError: continue
       workingDir: /var/workdir
       script: |
