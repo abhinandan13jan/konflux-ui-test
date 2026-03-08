@@ -12,7 +12,7 @@ spec:
       script: |
         #!/bin/sh
         ls
-        whoami
+        cat /etc/os-release
         echo "installing podman and shadow tools"
         dnf install -y podman shadow-utils
         echo "current subuid"
