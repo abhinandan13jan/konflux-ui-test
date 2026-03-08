@@ -17,5 +17,9 @@ spec:
         dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
         echo "installing docker"
         dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        systemctl enable --now docker
-        docker version
+        dockerd-rootless-setuptool.sh install
+        systemctl --user start docker
+        systemctl --user enable docker
+        loginctl enable-linger $(whoami)
+        systemctl --user status docker
+        docker info
