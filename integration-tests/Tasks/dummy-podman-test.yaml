@@ -128,7 +128,8 @@ spec:
         echo "installing buildah & podman"
         dnf install -y podman
         podman --version
-        echo "running podman"
+        echo "running podman top"
+        podman top
         podman run quay.io/podman/hello
         echo "verify shadow-utils"
         rpm -q shadow-utils
