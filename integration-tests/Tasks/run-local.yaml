@@ -18,10 +18,10 @@ spec:
         grep $(whoami) /etc/subuid
         grep $(whoami) /etc/subgid
         echo "updating subuid"
-        usermod --add-subuids 100000-165535 --add-subgids 100000-165535 $(whoami)
+        usermod --add-subuids 100000-200000 --add-subgids 100000-200000 $(whoami)
         echo "new subuid"
         grep $(whoami) /etc/subuid
         grep $(whoami) /etc/subgid
         dnf install -y slirp4netns
         echo "run podman hello world"
-        podman run hello-world
+        podman run --userns=auto hello-world
