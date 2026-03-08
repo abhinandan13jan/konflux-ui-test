@@ -4,9 +4,10 @@ metadata:
   name: run-local
 spec:
   steps:
-    - name: run-podman
-      image: alpine
-      script: |
+  image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+  onError: continue
+  workingDir: /var/workdir
+  script: |
         #!/bin/sh
         ls
         echo "installing podman dnf"
