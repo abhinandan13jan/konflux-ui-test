@@ -130,10 +130,9 @@ spec:
         echo "lising updates"
         ls
         echo "changing usermod"
-        usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
-        echo "getting podman version"
-        podman --version
-        podman system connection list
+        dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        systemctl enable --now docker
+        docker run hello-world
         echo "running pr-check"
         podman run --network=host -e CYPRESS_GH_TOKEN="asdf" "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
         exit 0
