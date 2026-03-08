@@ -12,7 +12,7 @@ spec:
         echo "installing podman dnf"
         dnf install -y podman
         echo "installing podman apt"
-        dnf install -y podman
+        apt install -y podman
         podman --version
         echo "running podman top"
         podman top
