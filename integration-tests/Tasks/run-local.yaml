@@ -31,4 +31,4 @@ spec:
         echo "chmod login def"
         chmod 644 /etc/login.defs
         echo "run podman hello world"
-        podman run --userns=keep-id hello-world
+        sudo podman run --userns=keep-id hello-world
