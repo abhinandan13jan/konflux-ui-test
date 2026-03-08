@@ -21,6 +21,7 @@ spec:
         export PATH=/home/testuser/bin:$PATH
         echo "Exporting docker host"
         export DOCKER_HOST=unix:///run/user/1000/docker.sock
+        ls ~/bin
         echo "run docker"
         docker run hello-world
 
