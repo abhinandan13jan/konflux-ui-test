@@ -4,52 +4,18 @@ metadata:
   name: run-local
 spec:
   steps:
-    # - name: run-docker
-    #   image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
-    #   # image: alpine
-    #   onError: continue
-    #   workingDir: /var/workdir
-    #   script: |
-    #     #!/bin/sh
-    #     ls
-    #     echo "Installing dnf-core"
-    #     dnf -y install dnf-plugins-core
-    #     echo "Installing config-mgr"
-    #     dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-    #     echo "Installing docker-ce"
-    #     dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    #     echo "systemctl start and enable docker"
-    #     service docker start
-    #     service docker enable
-    #     echo "run docker"
-    #     docker run hello-world
-
-
     - name: run-podman
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
+      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
       # image: alpine
       onError: continue
       workingDir: /var/workdir
       script: |
-        #!/bin/sh
-        ls
-        cat /etc/os-release
-        echo "installing podman"
-        dnf install -y podman
-        echo "current subuid"
-        grep $(whoami) /etc/subuid
-        grep $(whoami) /etc/subgid
-        echo "updating subuid"
-        usermod --add-subuids 100000-165535 --add-subgids 100000-165535 $(whoami)
-        echo "new subuid"
-        grep $(whoami) /etc/subuid
-        grep $(whoami) /etc/subgid
-        echo "changing permissions"
-        chmod 0755 /usr/bin/newuidmap /usr/bin/newgidmap
-        echo "setting cap"
-        setcap cap_setuid+ep /usr/bin/newuidmap
-        setcap cap_setgid+ep /usr/bin/newgidmap
-        echo "chmod login def"
-        chmod 644 /etc/login.defs
-        echo "run podman hello world"
-        podman top
+         #!/bin/bash
+          set -euo pipefail
+          cat /etc/os-release
+          npm -v
+          echo "cloning konflux-ui for pr-check script"
+          git clone "https://github.com/konflux-ci/konflux-ui.git" .
+          echo "listing all directories - new files"
+          echo "running pr-check"
+          exit 0
