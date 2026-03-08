@@ -13,16 +13,17 @@ spec:
         #!/bin/sh
         ls
         cat /etc/os-release
-        echo "installing podman and shadow tools"
-        dnf install -y podman shadow-utils
-        echo "current subuid"
-        grep $(whoami) /etc/subuid
-        grep $(whoami) /etc/subgid
-        echo "updating subuid"
-        usermod --add-subuids 200000-400000 --add-subgids 200000-400000 $(whoami)
-        echo "new subuid"
-        grep $(whoami) /etc/subuid
-        grep $(whoami) /etc/subgid
+        echo "installing podman"
+        dnf install -y podman
+        # echo "current subuid"
+        # grep $(whoami) /etc/subuid
+        # grep $(whoami) /etc/subgid
+        # echo "updating subuid"
+        # usermod --add-subuids 200000-400000 --add-subgids 200000-400000 $(whoami)
+        # echo "new subuid"
+        # grep $(whoami) /etc/subuid
+        # grep $(whoami) /etc/subgid
+        echo "changing permissions"
         chmod 0755 /usr/bin/newuidmap /usr/bin/newgidmap
         echo "run podman hello world"
         podman run hello-world
