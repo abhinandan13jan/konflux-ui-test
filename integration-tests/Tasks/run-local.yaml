@@ -3,6 +3,90 @@ kind: Task
 metadata:
   name: run-local
 spec:
+  params:
+    - name: test-name
+      type: string
+      description: "The name of the test being executed."
+      default: "ui-test"
+    - name: git-repo
+      type: string
+      default: "konflux-ui"
+      description: "The name of the Git repository containing the E2E tests."
+    - name: git-url
+      type: string
+      default: "https://github.com/konflux-ci/konflux-ui.git"
+      description: "The URL of the Git repository containing the E2E tests."
+    - name: git-revision
+      type: string
+      default: "main"
+      description: "The revision (branch or tag) of the Git repository to checkout."
+    - name: container-image
+      type: string
+      description: "Contain the container name from Konflux Snapshot."
+      default: "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+    - name: component-image
+      type: string
+      description: 'Container image built from any konflux git repo.'
+      default: "none"
+    - name: e2e-timeout
+      description: "Timeout value for running E2E script (cluster bootstrap + E2E tests)"
+      default: "150m"
+    - name: KUBECONFIG
+      default: '/credentials/kubeconfig'
+    - name: CYPRESS_GH_TOKEN
+      default: 'dummy'
+    - TARGET_BRANCH:
+      type: string
+      default: 'main'
+      description: 'target branch name'
+    - SOURCE_BRANCH:
+      type: string
+      default: 'main'
+      description: 'source branch name'
+    - PR_NUMBER:
+      type: string
+      default: '23'
+      description: 'pr number'
+    - HEAD_SHA:
+      type: string
+      default: ''
+      description: 'The revision (branch or tag) of the Git repository to checkout.'
+    - CYPRESS_KONFLUX_BASE_URL:
+      type: string
+      default: 'https://localhost:9443'
+      description: 'konflux base url'
+    - COMMIT_INFO_SHA:
+      type: string
+      default: ''
+      description: 'commit sha'
+    - COMMIT_INFO_BRANCH:
+      type: string
+      default: ''
+      description: 'commit branch'
+    - COMMIT_INFO_AUTHOR:
+      type: string
+      default: ''
+      description: 'commit author'
+    - CYPRESS_USERNAME:
+      type: string
+      default: ''
+      description: 'cypress username'
+    - CYPRESS_BRANCH:
+      type: string
+      default: ''
+      description: 'cypress branch'
+    - CYPRESS_PROJECT_ID:
+      type: string
+      default: ''
+      description: 'cypress project id.'
+    - CYPRESS_RECORD_KEY:
+      type: string
+      default: ''
+      description: 'cypress record key'
+    - JOB_TYPE:
+      type: string
+      default: 'on-push'
+      description: 'Job type for the PR, on-pull, on-push'
   volumes:
     - name: credentials
       secret:
@@ -16,11 +100,6 @@ spec:
         secretName: quay-secret
 
   stepTemplate:
-    env:
-      - name: KUBECONFIG
-        value: '/credentials/kubeconfig'
-      - name: LOG_FILENAME
-        value: '/var/log-dir/deploy-konflux-ci.log'
     volumeMounts:
       - name: credentials
         mountPath: /credentials
@@ -30,92 +109,114 @@ spec:
         mountPath: /var/log-dir/
   steps:
     - name: run-tests
-      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
-      # image: alpine
+      image: $(params.container-image)
       onError: continue
+      env:
+        - name: test-name
+          value: "$(params.test-name)"
+        - name: git-repo
+          value: "$(params.git-repo)"
+        - name: git-url
+          value: "$(params.git-url)"
+        - name: git-revision
+          value: "$(params.git-revision)"
+        - name: container-image
+          value: "$(params.container-image)"
+        - name: component-image
+          value: "$(params.component-image)"
+        - name: e2e-timeout
+          value: $(params.e2e-timeout)
+        - name: KUBECONFIG
+          value: "$(params.KUBECONFIG)"
+        - name: CYPRESS_GH_TOKEN
+          value: "$(params.CYPRESS_GH_TOKEN)"
+        - TARGET_BRANCH:
+          value: "$(params.TARGET_BRANCH)"
+        - SOURCE_BRANCH:
+          value: "$(params.SOURCE_BRANCH)"
+        - PR_NUMBER:
+          value: "$(params.PR_NUMBER)"
+        - HEAD_SHA:
+          value: "$(params.HEAD_SHA)"
+        - CYPRESS_KONFLUX_BASE_URL:
+          value: "$(params.CYPRESS_KONFLUX_BASE_URL)"
+        - COMMIT_INFO_SHA:
+          value: "$(params.COMMIT_INFO_SHA)"
+        - COMMIT_INFO_BRANCH:
+          value: "$(params.COMMIT_INFO_BRANCH)"
+        - COMMIT_INFO_AUTHOR:
+          value: "$(params.COMMIT_INFO_AUTHOR)"
+        - CYPRESS_USERNAME:
+          value: "$(params.CYPRESS_USERNAME)"
+        - CYPRESS_BRANCH:
+          value: "$(params.CYPRESS_BRANCH)"
+        - CYPRESS_PROJECT_ID:
+          value: "$(params.CYPRESS_PROJECT_ID)"
+        - CYPRESS_RECORD_KEY:
+          value: "$(params.CYPRESS_RECORD_KEY)"
+        - JOB_TYPE:
+          value: "$(params.JOB_TYPE)"
       script: |
-         #!/bin/bash
-          set -euo pipefail
-          cat /etc/os-release
-          whoami
-          ls
-          export CYPRESS_LOCAL_CLUSTER=false
-          export CYPRESS_PERIODIC_RUN_STAGE=true
-          export CYPRESS_KONFLUX_BASE_URL='https://localhost:9443'
-          export CYPRESS_GH_TOKEN="dummy"
-          export COMMIT_INFO_SHA
-          echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+        #!/bin/bash
+         set -euo pipefail
+         cat /etc/os-release
+         whoami
+         ls
+         export CYPRESS_LOCAL_CLUSTER=false
+         export CYPRESS_PERIODIC_RUN_STAGE=true
+         export CYPRESS_GH_TOKEN="dummy"
+         echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
 
-          # set COMMIT_INFO_* environment variables for Cypress Cloud reporting
-          # fallback "logic": explicit env var -> workflow-provided var -> git command
+         echo "=== COMMIT_INFO_* ==="
+         echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
+         echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
+         echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
+         echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
+         echo "================================="
 
-          # SHA: use COMMIT_INFO_SHA if set, otherwise HEAD_SHA (from workflow), otherwise git rev-parse
-          COMMIT_INFO_SHA="${COMMIT_INFO_SHA:-${HEAD_SHA}}"
-          [[ -z "${COMMIT_INFO_SHA}" ]] && COMMIT_INFO_SHA=$(git rev-parse HEAD 2>/dev/null || echo '')
+         COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
+             -v $PWD/e2e-tests:/e2e:Z,U \
+             --timeout=3600 \
+             -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
+             -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
+             -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
+             -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
+             -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
+             -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
+             -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
+             -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
 
-          # branch: use COMMIT_INFO_BRANCH if set, otherwise SOURCE_BRANCH (PRs) or REF_BRANCH (periodic), otherwise git rev-parse
-          COMMIT_INFO_BRANCH="${COMMIT_INFO_BRANCH:-${SOURCE_BRANCH:-${REF_BRANCH}}}"
-          [[ -z "${COMMIT_INFO_BRANCH}" ]] && COMMIT_INFO_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')
+         # build array of env vars to pass to podman (only include non-empty values)
+         COMMIT_ENV_ARGS_ARRAY=()
+         [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
+         [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
+         [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
+         [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
 
-          # message: use COMMIT_INFO_MESSAGE if set, otherwise fetch from git using SHA
-          if [[ -z "${COMMIT_INFO_MESSAGE}" && -n "${COMMIT_INFO_SHA}" ]]; then
-              COMMIT_INFO_MESSAGE=$(git log -1 --pretty=format:'%s' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
-          fi
-          # author: use COMMIT_INFO_AUTHOR if set, otherwise fetch from git using SHA
-          if [[ -z "${COMMIT_INFO_AUTHOR}" && -n "${COMMIT_INFO_SHA}" ]]; then
-              COMMIT_INFO_AUTHOR=$(git log -1 --pretty=format:'%an' "${COMMIT_INFO_SHA}" 2>/dev/null || echo '')
-          fi
+         RECORD_FLAG_ARGS=()
+         if [[ -n "${CYPRESS_PROJECT_ID}" && -n "${CYPRESS_RECORD_KEY}" ]]; then
+             RECORD_FLAG_ARGS+=("--record")
+             # add tag to identify which workflow/job type this run is from
+             JOB_TAG="${JOB_TYPE:-unknown}"
+             [[ -n "${SUITE}" ]] && JOB_TAG="${JOB_TAG}-${SUITE}"
+             RECORD_FLAG_ARGS+=("--tag" "${JOB_TAG}")
+             echo "Cypress recording enabled with tag: ${JOB_TAG}"
+         else
+             echo "Cypress recording disabled (missing PROJECT_ID or RECORD_KEY)"
+         fi
 
-          echo "=== COMMIT_INFO_* ==="
-          echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
-          echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
-          echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
-          echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
-          echo "================================="
+         case "${SUITE}" in
+             "features")
+                 SPEC_FILE="/e2e/tests/features.spec.ts"
+                 ;;
+             *)
+                 SPEC_FILE="/e2e/tests/basic-happy-path.spec.ts"
+                 ;;
+         esac
+         echo "Running tests from ${SPEC_FILE}"
 
-          COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
-              -v $PWD/e2e-tests:/e2e:Z,U \
-              --timeout=3600 \
-              -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
-              -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
-              -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
-              -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
-              -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
-              -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
-              -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
-              -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
-
-          # build array of env vars to pass to podman (only include non-empty values)
-          COMMIT_ENV_ARGS_ARRAY=()
-          [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
-          [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
-          [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
-          [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
-
-          RECORD_FLAG_ARGS=()
-          if [[ -n "${CYPRESS_PROJECT_ID}" && -n "${CYPRESS_RECORD_KEY}" ]]; then
-              RECORD_FLAG_ARGS+=("--record")
-              # add tag to identify which workflow/job type this run is from
-              JOB_TAG="${JOB_TYPE:-unknown}"
-              [[ -n "${SUITE}" ]] && JOB_TAG="${JOB_TAG}-${SUITE}"
-              RECORD_FLAG_ARGS+=("--tag" "${JOB_TAG}")
-              echo "Cypress recording enabled with tag: ${JOB_TAG}"
-          else
-              echo "Cypress recording disabled (missing PROJECT_ID or RECORD_KEY)"
-          fi
-
-          case "${SUITE}" in
-              "features")
-                  SPEC_FILE="/e2e/tests/features.spec.ts"
-                  ;;
-              *)
-                  SPEC_FILE="/e2e/tests/basic-happy-path.spec.ts"
-                  ;;
-          esac
-          echo "Running tests from ${SPEC_FILE}"
-
-          TEST_RUN=0
-          set -e
-          echo "running pr"
-          ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
-          exit 0
+         TEST_RUN=0
+         set -e
+         echo "running pr"
+         ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
+         exit 0
