@@ -174,7 +174,8 @@ spec:
          git clone https://github.com/konflux-ci/konflux-ui
          cd ./konflux-ui
          ls
-         npm install
+         nvm use 20
+         yarn install
         #  export CYPRESS_LOCAL_CLUSTER=false
         #  export CYPRESS_PERIODIC_RUN_STAGE=true
         #  export CYPRESS_GH_TOKEN="dummy"
