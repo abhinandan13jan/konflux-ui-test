@@ -28,13 +28,16 @@ spec:
   results:
     - name: e2e-output
       description: 'Result of e2e test'
-  workspaces:
+  volumes:
     - name: source
-      description: 'Workspace containing the source code'
+      emptyDir: {}
   steps:
     - name: clone-repository
       image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.40.2
-      workingDir: $(workspaces.source.path)
+      workingDir: /workspace/source
+      volumeMounts:
+        - name: source
+          mountPath: /workspace/source
       script: |
         #!/usr/bin/env sh
         set -eu
@@ -49,7 +52,10 @@ spec:
         ls -la
     - name: run-e2e-test
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
-      workingDir: $(workspaces.source.path)/repo
+      workingDir: /workspace/source/repo
+      volumeMounts:
+        - name: source
+          mountPath: /workspace/source
       env:
         - name: JOB_SPEC
           value: $(params.job-spec)
@@ -73,7 +79,10 @@ spec:
 
     - name: report-to-slack
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
-      workingDir: $(workspaces.source.path)/repo
+      workingDir: /workspace/source/repo
+      volumeMounts:
+        - name: source
+          mountPath: /workspace/source
       env:
         - name: JOB_TYPE
           value: $(params.job-type)
