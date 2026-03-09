@@ -35,55 +35,55 @@ spec:
       default: '/credentials/kubeconfig'
     - name: CYPRESS_GH_TOKEN
       default: 'dummy'
-    - TARGET_BRANCH:
+    - name: TARGET_BRANCH
       type: string
       default: 'main'
       description: 'target branch name'
-    - SOURCE_BRANCH:
+    - name: SOURCE_BRANCH
       type: string
       default: 'main'
       description: 'source branch name'
-    - PR_NUMBER:
+    - name: PR_NUMBER
       type: string
       default: '23'
       description: 'pr number'
-    - HEAD_SHA:
+    - name: HEAD_SHA
       type: string
       default: ''
       description: 'The revision (branch or tag) of the Git repository to checkout.'
-    - CYPRESS_KONFLUX_BASE_URL:
+    - name: CYPRESS_KONFLUX_BASE_URL
       type: string
       default: 'https://localhost:9443'
       description: 'konflux base url'
-    - COMMIT_INFO_SHA:
+    - name: COMMIT_INFO_SHA
       type: string
       default: ''
       description: 'commit sha'
-    - COMMIT_INFO_BRANCH:
+    - name: COMMIT_INFO_BRANCH
       type: string
       default: ''
       description: 'commit branch'
-    - COMMIT_INFO_AUTHOR:
+    - name: COMMIT_INFO_AUTHOR
       type: string
       default: ''
       description: 'commit author'
-    - CYPRESS_USERNAME:
+    - name: CYPRESS_USERNAME
       type: string
       default: ''
       description: 'cypress username'
-    - CYPRESS_BRANCH:
+    - name: CYPRESS_BRANCH
       type: string
       default: ''
       description: 'cypress branch'
-    - CYPRESS_PROJECT_ID:
+    - name: CYPRESS_PROJECT_ID
       type: string
       default: ''
       description: 'cypress project id.'
-    - CYPRESS_RECORD_KEY:
+    - name: CYPRESS_RECORD_KEY
       type: string
       default: ''
       description: 'cypress record key'
-    - JOB_TYPE:
+    - name: JOB_TYPE
       type: string
       default: 'on-push'
       description: 'Job type for the PR, on-pull, on-push'
