@@ -16,5 +16,6 @@ spec:
           whoami
           ls
           git clone https://github.com/konflux-ci/konflux-ui
+          cd ./konflux-ui
           ./pr_check.sh test-stage
           exit 0
