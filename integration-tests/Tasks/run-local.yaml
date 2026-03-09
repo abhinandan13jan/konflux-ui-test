@@ -5,18 +5,15 @@ metadata:
 spec:
   steps:
     - name: run-podman
-      image: quay.io/podman/stable:latest
-      securityContext:
-        privileged: true # Required for Podman
+      image: quay.io/buildah/stable
+      # image: alpine
       onError: continue
-      # workingDir: /var/workdir
       script: |
-        #!/bin/bash
-         set -euo pipefail
-         cat /etc/os-release
-         whoami
-         ls
-         git clone https://github.com/konflux-ci/konflux-ui
-         cd ./konflux-ui
-         ./pr_check.sh test-stage
-         exit 0
+         #!/bin/bash
+          set -euo pipefail
+          cat /etc/os-release
+          whoami
+          ls
+          echo "running buildah"
+          buildah info
+          exit 0
