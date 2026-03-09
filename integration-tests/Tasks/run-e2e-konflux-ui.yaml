@@ -15,31 +15,31 @@ spec:
     This task performs a full Konflux CI deployment. It clones the specified Git repository,
     checks out the desired branch, and runs deployment scripts using a kubeconfig retrieved from
     a Kubernetes secret. It is intended for use in OpenShift Pipelines or other Tekton environments.
-
   params:
-    - name: cluster-access-secret
-      description: Name of the Kubernetes Secret that contains the kubeconfig (base64 encoded) used to access the target cluster.
-    - name: repo-url
-      description: URL of the Git repository containing the Konflux CI deployment scripts.
-      default: https://github.com/konflux-ci/konflux-ci.git
-    - name: repo-branch
-      description: Git branch to check out when cloning the repository.
-      default: main
     - name: test-name
       type: string
       description: 'The name of the test being executed.'
+      default: 'ui-test'
+    - name: cluster-access-secret
+      type: string
+      description: 'cluster-access-secret-name'
+      default: ''
     - name: git-repo
       type: string
-      default: 'e2e-tests'
+      default: 'konflux-ui'
       description: 'The name of the Git repository containing the E2E tests.'
     - name: git-url
       type: string
-      default: 'https://github.com/konflux-ci/e2e-tests.git'
+      default: 'https://github.com/konflux-ci/konflux-ui.git'
       description: 'The URL of the Git repository containing the E2E tests.'
     - name: git-revision
       type: string
       default: 'main'
       description: 'The revision (branch or tag) of the Git repository to checkout.'
+    - name: container-image
+      type: string
+      description: 'Contain the container name from Konflux Snapshot.'
+      default: 'quay.io/konflux_ui_qe/konflux-ui-tests:latest'
     - name: component-image
       type: string
       description: 'Container image built from any konflux git repo.'
@@ -47,45 +47,74 @@ spec:
     - name: e2e-timeout
       description: 'Timeout value for running E2E script (cluster bootstrap + E2E tests)'
       default: '150m'
-    - name: test-environment
+    - name: KUBECONFIG
+      default: '/credentials/kubeconfig'
+    - name: CYPRESS_GH_TOKEN
+      default: 'dummy'
+    - name: TARGET_BRANCH
       type: string
-      description: "Name of the environment the testing should be performed in. Use 'downstream' for testing in OpenShift CI, or 'upstream' for testing in Kind cluster."
-      default: 'staging'
-    - name: component-name
-      description: |
-        The GitHub repository name of the Konflux CI component to customize (e.g., `build-service`, `release-service`).
-        Used for applying image or Kubernetes manifest overrides.
-      default: ''
-    - name: component-image-repository
-      description: |
-        Overrides the container image repository for the `component-name` (e.g., `quay.io/my-org/my-custom-image`).
-      default: ''
-    - name: component-image-tag
-      description: |
-        Overrides the container image tag for the `component-name` (e.g., `latest`, `my-feature-branch`).
-      default: ''
-    - name: component-pr-owner
-      description: |
-        GitHub owner (user|org) of the fork/PR providing custom Kubernetes manifests for the `component-name`.
-      default: ''
-    - name: component-pr-sha
-      description: |
-        Commit SHA of the PR (from `component-pr-owner`) supplying custom Kubernetes manifests for the `component-name`.
-      default: ''
-    - name: component-pr-source-branch
-      description: |
-        GitHub source branch of the pull request.
-      default: ''
-    - name: oci-ref
+      default: 'main'
+      description: 'target branch name'
+    - name: SOURCE_BRANCH
       type: string
-      description: Full OCI artifact reference in a format "quay.io/org/repo:tag. It's used for storing logs from the Task's Steps
+      default: 'main'
+      description: 'source branch name'
+    - name: PR_NUMBER
+      type: string
+      default: '23'
+      description: 'pr number'
+    - name: HEAD_SHA
+      type: string
+      default: ''
+      description: 'The revision (branch or tag) of the Git repository to checkout.'
+    - name: CYPRESS_KONFLUX_BASE_URL
+      type: string
+      default: 'https://localhost:9443'
+      description: 'konflux base url'
+    - name: COMMIT_INFO_SHA
+      type: string
+      default: ''
+      description: 'commit sha'
+    - name: COMMIT_INFO_BRANCH
+      type: string
+      default: ''
+      description: 'commit branch'
+    - name: COMMIT_INFO_AUTHOR
+      type: string
+      default: ''
+      description: 'commit author'
+    - name: COMMIT_INFO_MESSAGE
+      default: ''
+    - name: CYPRESS_USERNAME
+      type: string
+      default: ''
+      description: 'cypress username'
+    - name: CYPRESS_PASSWORD
+      type: string
+      default: ''
+      description: 'cypress password'
+    - name: CYPRESS_BRANCH
+      type: string
+      default: ''
+      description: 'cypress branch'
+    - name: CYPRESS_PROJECT_ID
+      type: string
+      default: ''
+      description: 'cypress project id.'
+    - name: CYPRESS_RECORD_KEY
+      type: string
+      default: ''
+      description: 'cypress record key'
+    - name: JOB_TYPE
+      type: string
+      default: 'on-push'
+      description: 'Job type for the PR, on-pull, on-push'
     - name: oci-credentials
       type: string
       description: |
         The secret name containing credentials for container registry where the artifacts will be stored.
         The secret should contain `data.oci-storage-dockerconfigjson: <dockerconfigjson-content>`
-      default: 'konflux-test-infra'
-
+      default: 'quay-secret'
   volumes:
     - name: credentials
       secret:
@@ -99,13 +128,6 @@ spec:
         secretName: $(params.oci-credentials)
 
   stepTemplate:
-    env:
-      - name: KUBECONFIG
-        value: '/credentials/kubeconfig'
-      - name: CYPRESS_GH_TOKEN
-        value: 'dummy'
-      - name: LOG_FILENAME
-        value: '/var/log-dir/deploy-konflux-ci.log'
     volumeMounts:
       - name: credentials
         mountPath: /credentials
@@ -113,19 +135,100 @@ spec:
         mountPath: /var/workdir
       - name: logs
         mountPath: /var/log-dir/
-
   steps:
-    - name: run-pr-on-latest
-      # image: #TO-DO - update with user generated image
-      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
+    - name: run-tests
+      image: $(params.container-image)
       onError: continue
+      env:
+        - name: test-name
+          value: '$(params.test-name)'
+        - name: git-repo
+          value: '$(params.git-repo)'
+        - name: git-url
+          value: '$(params.git-url)'
+        - name: git-revision
+          value: '$(params.git-revision)'
+        - name: container-image
+          value: '$(params.container-image)'
+        - name: component-image
+          value: '$(params.component-image)'
+        - name: e2e-timeout
+          value: $(params.e2e-timeout)
+        - name: KUBECONFIG
+          value: '$(params.KUBECONFIG)'
+        - name: CYPRESS_GH_TOKEN
+          value: '$(params.CYPRESS_GH_TOKEN)'
+        - name: TARGET_BRANCH
+          value: '$(params.TARGET_BRANCH)'
+        - name: SOURCE_BRANCH
+          value: '$(params.SOURCE_BRANCH)'
+        - name: PR_NUMBER
+          value: '$(params.PR_NUMBER)'
+        - name: HEAD_SHA
+          value: '$(params.HEAD_SHA)'
+        - name: CYPRESS_KONFLUX_BASE_URL
+          value: '$(params.CYPRESS_KONFLUX_BASE_URL)'
+        - name: COMMIT_INFO_SHA
+          value: '$(params.COMMIT_INFO_SHA)'
+        - name: COMMIT_INFO_BRANCH
+          value: '$(params.COMMIT_INFO_BRANCH)'
+        - name: COMMIT_INFO_AUTHOR
+          value: '$(params.COMMIT_INFO_AUTHOR)'
+        - name: COMMIT_INFO_MESSAGE
+          value: '$(params.COMMIT_INFO_MESSAGE)'
+        - name: CYPRESS_USERNAME
+          value: '$(params.CYPRESS_USERNAME)'
+        - name: CYPRESS_PASSWORD
+          value: '$(params.CYPRESS_PASSWORD)'
+        - name: CYPRESS_BRANCH
+          value: '$(params.CYPRESS_BRANCH)'
+        - name: CYPRESS_PROJECT_ID
+          value: '$(params.CYPRESS_PROJECT_ID)'
+        - name: CYPRESS_RECORD_KEY
+          value: '$(params.CYPRESS_RECORD_KEY)'
+        - name: JOB_TYPE
+          value: '$(params.JOB_TYPE)'
       script: |
         #!/bin/bash
-        set -euo pipefail
-        ls
-        echo "running pr-check"
-        # Add logic for spec file here
-        export CYPRESS_GH_TOKEN='asdf'
-        ./entrypoint.sh ./e2e/tests/basic-happy-path.spec.ts
-        exit 0
-        
+         set -euo pipefail
+         cat /etc/os-release
+         whoami
+         ls
+         export CYPRESS_LOCAL_CLUSTER=false
+         export CYPRESS_PERIODIC_RUN_STAGE=true
+         export CYPRESS_GH_TOKEN="dummy"
+         echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+
+         echo "=== COMMIT_INFO_* ==="
+         echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
+         echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
+         echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
+         echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
+         echo "================================="
+
+         COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
+             -v $PWD/e2e-tests:/e2e:Z,U \
+             --timeout=3600 \
+             -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
+             -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
+             -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
+             -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
+             -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
+             -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
+             -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
+             -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
+
+         # build array of env vars to pass to podman (only include non-empty values)
+         COMMIT_ENV_ARGS_ARRAY=()
+         [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
+         [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
+         [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
+         [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
+
+         echo "Running tests from Happy path"
+
+         TEST_RUN=0
+         set -e
+         echo "running pr"
+         ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
+         exit 0
