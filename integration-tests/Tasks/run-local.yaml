@@ -6,16 +6,17 @@ spec:
   steps:
     - name: run-podman
       image: quay.io/podman/stable:latest
-      # image: alpine
+      securityContext:
+        privileged: true # Required for Podman
       onError: continue
       # workingDir: /var/workdir
       script: |
-         #!/bin/bash
-          set -euo pipefail
-          cat /etc/os-release
-          whoami
-          ls
-          git clone https://github.com/konflux-ci/konflux-ui
-          cd ./konflux-ui
-          ./pr_check.sh test-stage
-          exit 0
+        #!/bin/bash
+         set -euo pipefail
+         cat /etc/os-release
+         whoami
+         ls
+         git clone https://github.com/konflux-ci/konflux-ui
+         cd ./konflux-ui
+         ./pr_check.sh test-stage
+         exit 0
