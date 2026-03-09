@@ -130,29 +130,29 @@ spec:
           value: "$(params.KUBECONFIG)"
         - name: CYPRESS_GH_TOKEN
           value: "$(params.CYPRESS_GH_TOKEN)"
-        - TARGET_BRANCH:
+        - name: TARGET_BRANCH
           value: "$(params.TARGET_BRANCH)"
-        - SOURCE_BRANCH:
+        - name: SOURCE_BRANCH
           value: "$(params.SOURCE_BRANCH)"
-        - PR_NUMBER:
+        - name: PR_NUMBER
           value: "$(params.PR_NUMBER)"
-        - HEAD_SHA:
+        - name: HEAD_SHA
           value: "$(params.HEAD_SHA)"
-        - CYPRESS_KONFLUX_BASE_URL:
+        - name: CYPRESS_KONFLUX_BASE_URL
           value: "$(params.CYPRESS_KONFLUX_BASE_URL)"
-        - COMMIT_INFO_SHA:
+        - name: COMMIT_INFO_SHA
           value: "$(params.COMMIT_INFO_SHA)"
-        - COMMIT_INFO_BRANCH:
+        - name: COMMIT_INFO_BRANCH
           value: "$(params.COMMIT_INFO_BRANCH)"
-        - COMMIT_INFO_AUTHOR:
+        - name: COMMIT_INFO_AUTHOR
           value: "$(params.COMMIT_INFO_AUTHOR)"
-        - CYPRESS_USERNAME:
+        - name: CYPRESS_USERNAME
           value: "$(params.CYPRESS_USERNAME)"
-        - CYPRESS_BRANCH:
+        - name: CYPRESS_BRANCH
           value: "$(params.CYPRESS_BRANCH)"
-        - CYPRESS_PROJECT_ID:
+        - name: CYPRESS_PROJECT_ID
           value: "$(params.CYPRESS_PROJECT_ID)"
-        - CYPRESS_RECORD_KEY:
+        - name: CYPRESS_RECORD_KEY
           value: "$(params.CYPRESS_RECORD_KEY)"
         - JOB_TYPE:
           value: "$(params.JOB_TYPE)"
