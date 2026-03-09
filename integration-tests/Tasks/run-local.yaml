@@ -16,7 +16,7 @@ spec:
           ls
           export CYPRESS_LOCAL_CLUSTER=false
           export CYPRESS_PERIODIC_RUN_STAGE=true
-          export CYPRESS_KONFLUX_BASE_URL='https://localhost:9443'
+          export CYPRESS_KONFLUX_BASE_URL='https://konflux-ui.apps.stone-stg-rh01.l2vh.p1.openshiftapps.com/'
           export CYPRESS_GH_TOKEN="dummy"
           echo "running pr"
           ./entrypoint.sh ./e2e/basic-happy-path.spec.ts
