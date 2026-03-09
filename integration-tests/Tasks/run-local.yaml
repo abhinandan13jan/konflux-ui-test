@@ -172,6 +172,9 @@ spec:
          cat /etc/os-release
          whoami
          ls
+         git clone https://github.com/konflux-ci/konflux-ui
+         cd ./konflux-ui
+         yarn install
          yarn start
         #  export CYPRESS_LOCAL_CLUSTER=false
         #  export CYPRESS_PERIODIC_RUN_STAGE=true
