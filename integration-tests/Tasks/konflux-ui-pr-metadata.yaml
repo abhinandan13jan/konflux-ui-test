@@ -92,13 +92,42 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['pac.test.appstudio.openshift.io/branch']
+        - name: GROUP_TEST_INFO
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['test.appstudio.openshift.io/group-test-info']
       script: |
         #!/bin/bash
+
+        # If KONFLUX_COMPONENT_NAME is empty, use the first component from SNAPSHOT
+        if [[ -z "$KONFLUX_COMPONENT_NAME" ]]; then
+          KONFLUX_COMPONENT_NAME=$(jq -r '.components[0].name' <<< "$SNAPSHOT")
+          echo "[INFO] No component label found, using first component: $KONFLUX_COMPONENT_NAME"
+        fi
 
         # Extract additional environment variables from SNAPSHOT
         GIT_URL=$(jq -r --arg component_name "$KONFLUX_COMPONENT_NAME" '.components[] | select(.name == $component_name) | .source.git.url' <<< "$SNAPSHOT")
         GIT_REVISION=$(jq -r --arg component_name "$KONFLUX_COMPONENT_NAME" '.components[] | select(.name == $component_name) | .source.git.revision' <<< "$SNAPSHOT")
         COMPONENT_CONTAINER_IMAGE=$(jq -r --arg component_name "$KONFLUX_COMPONENT_NAME" '.components[] | select(.name == $component_name) | .containerImage' <<< "$SNAPSHOT")
+
+        # If GIT_ORGANIZATION or GIT_REPOSITORY are empty, extract from GIT_URL
+        if [[ -z "$GIT_ORGANIZATION" || -z "$GIT_REPOSITORY" ]]; then
+          echo "[INFO] Extracting org/repo from GIT_URL: $GIT_URL"
+          GIT_ORGANIZATION=$(echo "$GIT_URL" | sed -n 's#.*github.com/\([^/]*\)/.*#\1#p')
+          GIT_REPOSITORY=$(echo "$GIT_URL" | sed -n 's#.*github.com/[^/]*/\([^/]*\).*#\1#p' | sed 's/\.git$//')
+        fi
+
+        # If PULL_REQUEST_NUMBER is empty, try to extract from GROUP_TEST_INFO
+        if [[ -z "$PULL_REQUEST_NUMBER" && -n "$GROUP_TEST_INFO" ]]; then
+          echo "[INFO] Extracting PR number from GROUP_TEST_INFO"
+          PULL_REQUEST_NUMBER=$(echo "$GROUP_TEST_INFO" | jq -r --arg component "$KONFLUX_COMPONENT_NAME" '.[] | select(.component == $component) | .pullRequestNumber' | head -1)
+          if [[ -z "$PULL_REQUEST_NUMBER" || "$PULL_REQUEST_NUMBER" == "null" ]]; then
+            # Fallback: use the first component's PR number
+            PULL_REQUEST_NUMBER=$(echo "$GROUP_TEST_INFO" | jq -r '.[0].pullRequestNumber')
+          fi
+          echo "[INFO] Found PR number: $PULL_REQUEST_NUMBER"
+        fi
+
         PR_AUTHOR="$(curl -s https://api.github.com/repos/${GIT_ORGANIZATION}/${GIT_REPOSITORY}/pulls/${PULL_REQUEST_NUMBER} | jq -r .user.login)"
         PR_LABELS="$(curl -s https://api.github.com/repos/${GIT_ORGANIZATION}/${GIT_REPOSITORY}/pulls/${PULL_REQUEST_NUMBER} | jq -r .labels)"
 
