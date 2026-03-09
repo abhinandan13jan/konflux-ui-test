@@ -3,6 +3,31 @@ kind: Task
 metadata:
   name: run-local
 spec:
+  volumes:
+    - name: credentials
+      secret:
+        secretName: konflux-test-infra
+    - name: workdir
+      emptyDir: {}
+    - name: logs
+      emptyDir: {}
+    - name: konflux-test-infra-volume
+      secret:
+        secretName: quay-secret
+
+  stepTemplate:
+    env:
+      - name: KUBECONFIG
+        value: '/credentials/kubeconfig'
+      - name: LOG_FILENAME
+        value: '/var/log-dir/deploy-konflux-ci.log'
+    volumeMounts:
+      - name: credentials
+        mountPath: /credentials
+      - name: workdir
+        mountPath: /var/workdir
+      - name: logs
+        mountPath: /var/log-dir/
   steps:
     - name: run-tests
       image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
@@ -92,5 +117,5 @@ spec:
           TEST_RUN=0
           set -e
           echo "running pr"
-          ./entrypoint.sh ./e2e/basic-happy-path.spec.ts
+          ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
           exit 0
