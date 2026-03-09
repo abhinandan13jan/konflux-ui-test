@@ -52,7 +52,7 @@ spec:
         ls -la
     - name: run-e2e-test
       image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
-      workingDir: /e2e
+      workingDir: /tmp/e2e
       volumeMounts:
         - name: source
           mountPath: /workspace/source
@@ -81,11 +81,11 @@ spec:
           echo "Running test suite against local Konflux UI in kind cluster"
         fi
 
-        # Run Cypress tests directly (test image already contains test code in /e2e)
-        SPEC_FILE="/e2e/tests/basic-happy-path.spec.ts"
+        # Run Cypress tests (test code is in /tmp/e2e in the image)
+        SPEC_FILE="tests/basic-happy-path.spec.ts"
         echo "Running tests from ${SPEC_FILE}"
 
-        npx cypress run --spec "${SPEC_FILE}" || EXIT_CODE=$?
+        npx cypress run -b chrome --spec "${SPEC_FILE}" || EXIT_CODE=$?
 
         # Store the exit code
         EXIT_CODE=${EXIT_CODE:-0}
