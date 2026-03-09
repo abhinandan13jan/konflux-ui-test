@@ -33,6 +33,10 @@ spec:
       description: 'Secret name containing Slack credentials'
       type: string
       default: "slack-credentials"
+    - name: github-credentials-secret
+      description: 'Secret name containing GitHub token'
+      type: string
+      default: "github-credentials"
   results:
     - name: e2e-output
       description: 'Result of e2e test'
@@ -83,6 +87,11 @@ spec:
             secretKeyRef:
               name: $(params.cypress-credentials-secret)
               key: password
+        - name: GH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.github-credentials-secret)
+              key: token
       script: |
         #!/usr/bin/env bash
         set -euo pipefail

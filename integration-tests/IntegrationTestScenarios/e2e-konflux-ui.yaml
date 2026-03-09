@@ -14,8 +14,8 @@ spec:
   params:
     - name: konflux-test-infra-secret
       value: konflux-test-infra
-    - name: cloud-credential-key
-      value: rhtap-cloud-credentials-us-east-1
+    - name: oci-credentials-secret
+      value: quay-secret
     - name: github-credentials-secret
       value: github-credentials
     - name: cypress-credentials-secret
