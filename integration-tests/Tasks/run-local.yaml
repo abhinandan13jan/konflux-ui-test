@@ -73,6 +73,10 @@ spec:
       type: string
       default: ''
       description: 'cypress username'
+    - name: CYPRESS_PASSWORD
+      type: string
+      default: ''
+      description: 'cypress password'
     - name: CYPRESS_BRANCH
       type: string
       default: ''
@@ -152,6 +156,8 @@ spec:
           value: "$(params.COMMIT_INFO_MESSAGE)"
         - name: CYPRESS_USERNAME
           value: "$(params.CYPRESS_USERNAME)"
+        - name: CYPRESS_PASSWORD
+          value: "$(params.CYPRESS_PASSWORD)"
         - name: CYPRESS_BRANCH
           value: "$(params.CYPRESS_BRANCH)"
         - name: CYPRESS_PROJECT_ID
@@ -197,26 +203,6 @@ spec:
          [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
          [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
 
-         RECORD_FLAG_ARGS=()
-         if [[ -n "${CYPRESS_PROJECT_ID}" && -n "${CYPRESS_RECORD_KEY}" ]]; then
-             RECORD_FLAG_ARGS+=("--record")
-             # add tag to identify which workflow/job type this run is from
-             JOB_TAG="${JOB_TYPE:-unknown}"
-             [[ -n "${SUITE}" ]] && JOB_TAG="${JOB_TAG}-${SUITE}"
-             RECORD_FLAG_ARGS+=("--tag" "${JOB_TAG}")
-             echo "Cypress recording enabled with tag: ${JOB_TAG}"
-         else
-             echo "Cypress recording disabled (missing PROJECT_ID or RECORD_KEY)"
-         fi
-
-         case "${SUITE}" in
-             "features")
-                 SPEC_FILE="/e2e/tests/features.spec.ts"
-                 ;;
-             *)
-                 SPEC_FILE="/e2e/tests/basic-happy-path.spec.ts"
-                 ;;
-         esac
          echo "Running tests from ${SPEC_FILE}"
 
          TEST_RUN=0
