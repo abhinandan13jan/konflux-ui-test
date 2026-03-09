@@ -67,6 +67,8 @@ spec:
       type: string
       default: ''
       description: 'commit author'
+    - name: COMMIT_INFO_MESSAGE
+      default: ''
     - name: CYPRESS_USERNAME
       type: string
       default: ''
@@ -146,6 +148,8 @@ spec:
           value: "$(params.COMMIT_INFO_BRANCH)"
         - name: COMMIT_INFO_AUTHOR
           value: "$(params.COMMIT_INFO_AUTHOR)"
+        - name: COMMIT_INFO_MESSAGE
+          value: "$(params.COMMIT_INFO_MESSAGE)"
         - name: CYPRESS_USERNAME
           value: "$(params.CYPRESS_USERNAME)"
         - name: CYPRESS_BRANCH
