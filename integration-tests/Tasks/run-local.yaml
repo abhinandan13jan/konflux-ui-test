@@ -4,8 +4,8 @@ metadata:
   name: run-local
 spec:
   steps:
-    - name: run-podman
-      image: quay.io/podman/stable:latest 
+    - name: run-tests
+      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
       # image: alpine
       onError: continue
       script: |
@@ -14,6 +14,10 @@ spec:
           cat /etc/os-release
           whoami
           ls
-          echo "running buildah"
-          podman info
+          export CYPRESS_LOCAL_CLUSTER=false
+          export CYPRESS_PERIODIC_RUN_STAGE=true
+          export CYPRESS_KONFLUX_BASE_URL='https://localhost:9443'
+          export CYPRESS_GH_TOKEN="dummy"
+          echo "running pr"
+          ./entrypoint.sh ./e2e/basic-happy-path.spec.ts
           exit 0
