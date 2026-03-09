@@ -99,6 +99,14 @@ spec:
         echo "Running Cypress E2E tests"
         echo "Job Type: ${JOB_TYPE}"
 
+        # Debug: Check if GH_TOKEN is set
+        if [[ -z "${GH_TOKEN:-}" ]]; then
+          echo "ERROR: GH_TOKEN is not set!"
+          exit 1
+        else
+          echo "GH_TOKEN is set (length: ${#GH_TOKEN})"
+        fi
+
         # Determine test configuration based on job type
         if [[ ${JOB_TYPE} == 'periodic-stage' ]]; then
           echo "Running test suite against stage backend..."
@@ -111,6 +119,11 @@ spec:
         # Run Cypress tests (test code is in /tmp/e2e in the image)
         SPEC_FILE="tests/basic-happy-path.spec.ts"
         echo "Running tests from ${SPEC_FILE}"
+
+        # Ensure all required env vars are exported
+        export GH_TOKEN
+        export CYPRESS_USERNAME
+        export CYPRESS_PASSWORD
 
         npx cypress run -b chrome --spec "${SPEC_FILE}" || EXIT_CODE=$?
 
