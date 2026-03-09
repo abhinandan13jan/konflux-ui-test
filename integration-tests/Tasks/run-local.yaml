@@ -44,7 +44,7 @@ spec:
           export CYPRESS_KONFLUX_BASE_URL='https://localhost:9443'
           export CYPRESS_GH_TOKEN="dummy"
           export COMMIT_INFO_SHA
-          echo "running tests using image ${TEST_IMAGE}"
+          echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
 
           # set COMMIT_INFO_* environment variables for Cypress Cloud reporting
           # fallback "logic": explicit env var -> workflow-provided var -> git command
