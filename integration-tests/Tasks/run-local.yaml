@@ -177,6 +177,7 @@ spec:
          npm -v
          node -v
          yarn install
+         yarn start
         #  export CYPRESS_LOCAL_CLUSTER=false
         #  export CYPRESS_PERIODIC_RUN_STAGE=true
         #  export CYPRESS_GH_TOKEN="dummy"
