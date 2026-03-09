@@ -5,7 +5,7 @@ metadata:
 spec:
   steps:
     - name: run-podman
-      image: quay.io/buildah/stable
+      image: quay.io/podman/stable:latest 
       # image: alpine
       onError: continue
       script: |
@@ -15,5 +15,5 @@ spec:
           whoami
           ls
           echo "running buildah"
-          buildah info
+          podman info
           exit 0
