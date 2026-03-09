@@ -154,7 +154,7 @@ spec:
           value: "$(params.CYPRESS_PROJECT_ID)"
         - name: CYPRESS_RECORD_KEY
           value: "$(params.CYPRESS_RECORD_KEY)"
-        - JOB_TYPE:
+        - name: JOB_TYPE
           value: "$(params.JOB_TYPE)"
       script: |
         #!/bin/bash
