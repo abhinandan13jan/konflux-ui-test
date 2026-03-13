@@ -175,18 +175,37 @@ spec:
         # Get service port and targetPort
         echo "=== Determining Correct Port for Port-Forward ==="
 
+        # Get full service YAML to understand port mapping
+        echo "Full service configuration:"
+        kubectl get svc proxy -n konflux-ui -o yaml | grep -A 10 "ports:"
+
+        echo ""
+
         # Get the first service port (usually the HTTP port)
         SERVICE_PORT=$(kubectl get svc proxy -n konflux-ui -o jsonpath='{.spec.ports[0].port}')
         SERVICE_TARGET_PORT=$(kubectl get svc proxy -n konflux-ui -o jsonpath='{.spec.ports[0].targetPort}')
 
         echo "Service Port: ${SERVICE_PORT}"
-        echo "Service TargetPort: ${SERVICE_TARGET_PORT}"
+        echo "Service TargetPort (named): ${SERVICE_TARGET_PORT}"
 
-        # If targetPort is a named port, we need to resolve it to a number
-        # But for port-forward, we should use the service directly instead of pod
+        # The issue: oauth2-proxy listens on port 6000, nginx on 8080/9443
+        # Service might be routing to wrong container
+        # Let's try to find the oauth2-proxy container port
+
+        OAUTH2_PROXY_PORT=$(kubectl get pod ${POD_NAME} -n konflux-ui -o jsonpath='{.spec.containers[?(@.name=="oauth2-proxy")].ports[0].containerPort}')
+        echo "OAuth2-Proxy container port (from spec): ${OAUTH2_PROXY_PORT}"
 
         echo ""
-        echo "NOTE: This pod has multiple containers. Using SERVICE port-forward instead of POD port-forward."
+        echo "=== Checking Actual Listening Ports in Pod ==="
+        echo "Running 'ss -tln' inside pod to see what's actually listening..."
+        kubectl exec ${POD_NAME} -n konflux-ui -c nginx -- ss -tln 2>/dev/null | grep LISTEN || echo "Could not run ss in nginx container"
+        echo ""
+        kubectl exec ${POD_NAME} -n konflux-ui -c oauth2-proxy -- ss -tln 2>/dev/null | grep LISTEN || echo "Could not run ss in oauth2-proxy container"
+        echo ""
+
+        echo "NOTE: This pod has multiple containers (nginx + oauth2-proxy)."
+        echo "Based on the listening ports above, we need to forward to the correct port."
+        echo "Typically oauth2-proxy listens on port ${OAUTH2_PROXY_PORT}."
         echo ""
 
         # Show all available access methods
@@ -194,17 +213,18 @@ spec:
         echo "1. From within Kind cluster:"
         echo "   - Service URL (HTTP): http://${SVC_CLUSTER_IP}:${SERVICE_PORT}"
         echo "   - Service URL (HTTPS): https://${SVC_CLUSTER_IP}:9443"
-        echo "   - Pod Direct: http://${POD_IP} (multi-container pod)"
+        echo "   - Pod oauth2-proxy: http://${POD_IP}:${OAUTH2_PROXY_PORT}"
         echo ""
         echo "2. Via port-forward (what we're setting up):"
         LOCAL_PORT=8080
-        echo "   - Will forward localhost:${LOCAL_PORT} -> service/proxy:${SERVICE_PORT}"
+        echo "   - Will forward localhost:${LOCAL_PORT} -> pod/${POD_NAME}:${OAUTH2_PROXY_PORT} (oauth2-proxy)"
         echo ""
 
-        # Start port forward to the SERVICE (not pod) to let service routing handle multi-container
+        # Start port forward to the oauth2-proxy container port directly
+        # The service routing seems to be broken, so we bypass it
         echo "=== Starting Port Forward ==="
-        echo "Command: kubectl port-forward -n konflux-ui svc/proxy ${LOCAL_PORT}:${SERVICE_PORT}"
-        kubectl port-forward -n konflux-ui svc/proxy ${LOCAL_PORT}:${SERVICE_PORT} &
+        echo "Command: kubectl port-forward -n konflux-ui pod/${POD_NAME} ${LOCAL_PORT}:${OAUTH2_PROXY_PORT}"
+        kubectl port-forward -n konflux-ui pod/${POD_NAME} ${LOCAL_PORT}:${OAUTH2_PROXY_PORT} &
         PORT_FORWARD_PID=$!
         echo "Port forward started with PID: ${PORT_FORWARD_PID}"
         echo ""
@@ -216,19 +236,26 @@ spec:
         echo "Waiting for port forward to establish..."
         sleep 5
 
-        # First, test if the service is accessible from within the Kind cluster
-        echo "=== Testing Service Accessibility from Kind Cluster ==="
-        echo "Testing http://${SVC_CLUSTER_IP}:${SERVICE_PORT} ..."
+        # First, test if the oauth2-proxy is accessible directly (bypassing service)
+        echo "=== Testing OAuth2-Proxy Accessibility from Kind Cluster ==="
+        echo "Testing http://${POD_IP}:${OAUTH2_PROXY_PORT} (oauth2-proxy direct)..."
 
         # Use timeout to prevent hanging, and capture errors
-        SERVICE_TEST_RESULT=$(timeout 10 curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 http://${SVC_CLUSTER_IP}:${SERVICE_PORT} 2>&1 || echo "000")
-        echo "HTTP Response Code: ${SERVICE_TEST_RESULT}"
+        OAUTH2_TEST_RESULT=$(timeout 10 curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 http://${POD_IP}:${OAUTH2_PROXY_PORT} 2>&1 || echo "000")
+        echo "HTTP Response Code: ${OAUTH2_TEST_RESULT}"
 
-        if [[ "${SERVICE_TEST_RESULT}" =~ ^(200|301|302|304|401|403|404)$ ]]; then
-          echo "✓ Service is accessible within Kind cluster!"
+        if [[ "${OAUTH2_TEST_RESULT}" =~ ^(200|301|302|304|401|403|404)$ ]]; then
+          echo "✓ OAuth2-Proxy is accessible!"
         else
-          echo "✗ WARNING: Service may not be accessible within Kind cluster"
-          echo "Response: ${SERVICE_TEST_RESULT}"
+          echo "✗ WARNING: OAuth2-Proxy may not be accessible"
+          echo "Response: ${OAUTH2_TEST_RESULT}"
+
+          echo ""
+          echo "Testing Service endpoint: http://${SVC_CLUSTER_IP}:${SERVICE_PORT} ..."
+          SERVICE_TEST_RESULT=$(timeout 10 curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 http://${SVC_CLUSTER_IP}:${SERVICE_PORT} 2>&1 || echo "000")
+          echo "Service HTTP Response Code: ${SERVICE_TEST_RESULT}"
+
+          echo ""
           echo "This could indicate the service itself is not working correctly."
           echo ""
           echo "Checking pod status:"
