@@ -114,9 +114,23 @@ spec:
           exit 1
         }
 
+        # Get the service port
+        echo "Checking proxy service configuration..."
+        kubectl get svc proxy -n konflux-ui
+
+        # Get the actual service port (usually the first port)
+        SERVICE_PORT=$(kubectl get svc proxy -n konflux-ui -o jsonpath='{.spec.ports[0].port}')
+        if [[ -z "${SERVICE_PORT}" ]]; then
+          echo "ERROR: Could not determine service port"
+          kubectl get svc proxy -n konflux-ui -o yaml
+          exit 1
+        fi
+
+        echo "Found service port: ${SERVICE_PORT}"
+
         # Start port forward in background
-        echo "Starting port forward from localhost:8080 to proxy service in konflux-ui namespace..."
-        kubectl port-forward -n konflux-ui svc/proxy 8080:8080 &
+        echo "Starting port forward from localhost:8080 to proxy service port ${SERVICE_PORT} in konflux-ui namespace..."
+        kubectl port-forward -n konflux-ui svc/proxy 8080:${SERVICE_PORT} &
         PORT_FORWARD_PID=$!
         echo "Port forward started with PID: ${PORT_FORWARD_PID}"
 
