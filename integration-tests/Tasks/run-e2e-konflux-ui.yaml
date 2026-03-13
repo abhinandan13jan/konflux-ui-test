@@ -220,21 +220,31 @@ spec:
         echo "=== Testing Service Accessibility from Kind Cluster ==="
         echo "Testing http://${SVC_CLUSTER_IP}:${SERVICE_PORT} ..."
 
-        SERVICE_TEST_RESULT=$(curl -s -o /dev/null -w "%{http_code}" http://${SVC_CLUSTER_IP}:${SERVICE_PORT} 2>/dev/null || echo "000")
+        # Use timeout to prevent hanging, and capture errors
+        SERVICE_TEST_RESULT=$(timeout 10 curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 http://${SVC_CLUSTER_IP}:${SERVICE_PORT} 2>&1 || echo "000")
         echo "HTTP Response Code: ${SERVICE_TEST_RESULT}"
 
         if [[ "${SERVICE_TEST_RESULT}" =~ ^(200|301|302|304|401|403|404)$ ]]; then
           echo "✓ Service is accessible within Kind cluster!"
         else
           echo "✗ WARNING: Service may not be accessible within Kind cluster"
+          echo "Response: ${SERVICE_TEST_RESULT}"
           echo "This could indicate the service itself is not working correctly."
           echo ""
           echo "Checking pod status:"
           kubectl get pods ${POD_NAME} -n konflux-ui -o wide
           echo ""
-          echo "Checking container logs:"
-          kubectl logs ${POD_NAME} -n konflux-ui -c nginx --tail=20 2>/dev/null || echo "Could not get nginx logs"
-          kubectl logs ${POD_NAME} -n konflux-ui -c oauth2-proxy --tail=20 2>/dev/null || echo "Could not get oauth2-proxy logs"
+          echo "Checking all containers in pod:"
+          kubectl get pods ${POD_NAME} -n konflux-ui -o jsonpath='{.spec.containers[*].name}' && echo
+          echo ""
+          echo "Checking container logs (nginx):"
+          kubectl logs ${POD_NAME} -n konflux-ui -c nginx --tail=30 2>&1 || echo "Could not get nginx logs"
+          echo ""
+          echo "Checking container logs (oauth2-proxy):"
+          kubectl logs ${POD_NAME} -n konflux-ui -c oauth2-proxy --tail=30 2>&1 || echo "Could not get oauth2-proxy logs"
+          echo ""
+          echo "Describing pod:"
+          kubectl describe pod ${POD_NAME} -n konflux-ui | tail -50
         fi
         echo ""
 
