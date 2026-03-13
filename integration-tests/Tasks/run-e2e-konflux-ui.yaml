@@ -48,6 +48,10 @@ spec:
   results:
     - name: e2e-output
       description: 'Result of e2e test'
+    - name: service-url
+      description: 'Konflux UI service URL in Kind cluster'
+    - name: service-https-url
+      description: 'Konflux UI service HTTPS URL in Kind cluster'
   volumes:
     - name: source
       emptyDir: {}
@@ -215,13 +219,21 @@ spec:
         # Show all available access methods
         echo "=== Available Access Methods ==="
         echo "1. From within Kind cluster:"
-        echo "   - Service URL (HTTP): http://${SVC_CLUSTER_IP}:${SERVICE_PORT}"
-        echo "   - Service URL (HTTPS): https://${SVC_CLUSTER_IP}:9443"
+        SERVICE_HTTP_URL="http://${SVC_CLUSTER_IP}:${SERVICE_PORT}"
+        SERVICE_HTTPS_URL="https://${SVC_CLUSTER_IP}:9443"
+        echo "   - Service URL (HTTP): ${SERVICE_HTTP_URL}"
+        echo "   - Service URL (HTTPS): ${SERVICE_HTTPS_URL}"
         echo "   - Pod oauth2-proxy: http://${POD_IP}:${OAUTH2_PROXY_PORT}"
         echo ""
         echo "2. Via port-forward (what we're setting up):"
         LOCAL_PORT=8080
         echo "   - Will forward localhost:${LOCAL_PORT} -> pod/${POD_NAME}:${OAUTH2_PROXY_PORT} (oauth2-proxy)"
+        echo ""
+
+        # Save Service URLs to task results for use in run-e2e-test step
+        echo -n "${SERVICE_HTTP_URL}" > $(results.service-url.path)
+        echo -n "${SERVICE_HTTPS_URL}" > $(results.service-https-url.path)
+        echo "Service URLs saved to task results"
         echo ""
 
         # Start port forward to the oauth2-proxy container port directly
@@ -382,6 +394,8 @@ spec:
       volumeMounts:
         - name: source
           mountPath: /workspace/source
+        - name: kubeconfig
+          mountPath: /credentials
       env:
         - name: JOB_SPEC
           value: $(params.job-spec)
@@ -428,11 +442,41 @@ spec:
           export CYPRESS_PERIODIC_RUN_STAGE=true
         else
           echo "Running test suite against local Konflux UI in kind cluster"
+
+          # Set up kubeconfig to access Kind cluster
+          if [[ -f /credentials/kubeconfig ]]; then
+            export KUBECONFIG=/credentials/kubeconfig
+            echo "Using kubeconfig from /credentials/kubeconfig"
+
+            # Read Service URL from task results (saved by setup-port-forward step)
+            SERVICE_URL=$(cat $(results.service-url.path) 2>/dev/null || echo "")
+
+            if [[ -n "${SERVICE_URL}" ]]; then
+              echo "Using Kind cluster Service URL: ${SERVICE_URL}"
+              export CYPRESS_BASE_URL="${SERVICE_URL}"
+
+              # Verify kubeconfig works
+              echo "Verifying access to Kind cluster..."
+              if kubectl get svc proxy -n konflux-ui >/dev/null 2>&1; then
+                echo "✓ Successfully connected to Kind cluster"
+                kubectl get svc proxy -n konflux-ui -o wide
+              else
+                echo "WARNING: Cannot access Kind cluster Service"
+              fi
+            else
+              echo "WARNING: No Service URL found in task results, using default localhost:8080"
+              export CYPRESS_BASE_URL="https://localhost:8080"
+            fi
+          else
+            echo "WARNING: kubeconfig not found, using default localhost:8080"
+            export CYPRESS_BASE_URL="https://localhost:8080"
+          fi
         fi
 
         # Run Cypress tests (test code is in /tmp/e2e in the image)
         SPEC_FILE="tests/basic-happy-path.spec.ts"
         echo "Running tests from ${SPEC_FILE}"
+        echo "CYPRESS_BASE_URL: ${CYPRESS_BASE_URL:-not set}"
 
         # Run Cypress with environment variables passed via --env flag
         # Cypress automatically picks up CYPRESS_* variables, but GH_TOKEN needs to be explicit
