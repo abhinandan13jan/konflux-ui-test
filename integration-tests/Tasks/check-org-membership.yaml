@@ -6,7 +6,7 @@ metadata:
   annotations:
     tekton.dev/displayName: 'konflux-ui-org-membership'
     tekton.dev/categories: 'Pipeline'
-    tekton.dev/tags: 'config,rhads'
+    tekton.dev/tags: 'ui,konflux'
 spec:
   description: >-
     checks org membership for konflux-ui
