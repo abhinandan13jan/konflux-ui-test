@@ -115,7 +115,7 @@ spec:
         mountPath: /var/log-dir/
   steps:
     - name: run-tests
-      image: quay.io/carawang/konflux-ui-test:dummy-konflux-ui-e2e-cctdb
+      image: image-rbac-proxy.apps.stone-stg-rh01.l2vh.p1.openshiftapps.com/redhat-user-workloads-stage/wlin-tenant/konflux-ui-test@sha256:4a5f2145044cb4b09e91de33bcac95a0e40f0deeaec33a4161e1e5f859a5a791
       onError: continue
       env:
         - name: test-name
