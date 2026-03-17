@@ -17,7 +17,7 @@ spec:
     - name: job-type
       description: 'Type of job (e.g., periodic-stage, periodic, pr)'
       type: string
-      default: ""
+      default: "pr-check"
     - name: git-url
       description: 'Git repository URL'
       type: string
@@ -54,8 +54,6 @@ spec:
         secretName: $(params.cluster-access-secret)
         optional: true
     - name: shared-data
-      emptyDir: {}
-    - name: test-artifacts
       emptyDir: {}
   sidecars:
     - name: port-forward
@@ -392,7 +390,13 @@ spec:
         if [[ -n "${CYPRESS_PROJECT_ID:-}" && -n "${CYPRESS_RECORD_KEY:-}" ]]; then
           echo "✓ Cypress Cloud recording enabled"
           echo "  Project ID: ${CYPRESS_PROJECT_ID}"
-          CYPRESS_ARGS="${CYPRESS_ARGS} --record --tag ${JOB_TYPE}"
+          CYPRESS_ARGS="${CYPRESS_ARGS} --record"
+
+          # Add tag if JOB_TYPE is set and not empty
+          if [[ -n "${JOB_TYPE:-}" ]]; then
+            CYPRESS_ARGS="${CYPRESS_ARGS} --tag ${JOB_TYPE}"
+            echo "  Tag: ${JOB_TYPE}"
+          fi
         else
           echo "ℹ Cypress Cloud recording disabled (PROJECT_ID or RECORD_KEY not set)"
         fi
