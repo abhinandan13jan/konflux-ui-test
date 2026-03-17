@@ -16,6 +16,10 @@ spec:
     - name: oci-container-repo
       default: 'quay.io/carawang/konflux-ui-test'
       description: The ORAS container used to store all test artifacts.
+    - name: e2e-artifacts-repo
+      default: 'quay.io/konflux_ui_qe/pr-check-artefacts'
+      description: The OCI repository to store E2E test artifacts (videos, screenshots, reports)
+      type: string
     - name: artifact-browser-url
       description: 'URL to the artifact browser deployment. If provided, a link will be added to PR comments.'
       default: ''
@@ -173,6 +177,8 @@ spec:
           - name: pathInRepo
             value: tasks/konflux-ci/deploy/0.2/deploy-konflux-ci.yaml
       params:
+        - name: create-test-resources
+          value: 'false'
         - name: cluster-access-secret
           value: kfg-$(context.pipelineRun.name)
         - name: component-name
@@ -223,6 +229,10 @@ spec:
           value: '$(params.cluster-kubeconfig-secret)'
         - name: debug-pause-minutes
           value: $(params.debug-pause-minutes)
+        - name: oci-storage
+          value: '$(params.e2e-artifacts-repo)'
+        - name: oci-credentials-secret
+          value: $(params.oci-credentials-secret)
   finally:
     - name: deprovision-kind-cluster
       when:

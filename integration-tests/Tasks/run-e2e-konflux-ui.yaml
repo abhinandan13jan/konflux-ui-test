@@ -49,6 +49,14 @@ spec:
       description: 'Minutes to pause after test for artifact inspection (0 to skip, max 60)'
       type: string
       default: "0"
+    - name: oci-storage
+      description: 'OCI repository to store test artifacts (e.g., quay.io/user/repo:tag)'
+      type: string
+      default: ""
+    - name: oci-credentials-secret
+      description: 'Secret containing OCI registry credentials'
+      type: string
+      default: "quay-secret"
   results:
     - name: e2e-output
       description: 'Result of e2e test'
@@ -59,6 +67,13 @@ spec:
         optional: true
     - name: shared-data
       emptyDir: {}
+    - name: oci-credentials
+      secret:
+        secretName: $(params.oci-credentials-secret)
+        optional: true
+        items:
+          - key: .dockerconfigjson
+            path: .dockerconfigjson
   sidecars:
     - name: port-forward
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
@@ -70,6 +85,8 @@ spec:
       env:
         - name: JOB_TYPE
           value: $(params.job-type)
+        - name: CLUSTER_ACCESS_SECRET_PARAM
+          value: $(params.cluster-access-secret)
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
@@ -80,15 +97,24 @@ spec:
         echo ""
         echo "Environment:"
         echo "  JOB_TYPE: ${JOB_TYPE}"
-        echo "  Task parameter cluster-access-secret: $(params.cluster-access-secret)"
+        echo ""
+        echo "Task Parameters Received:"
+        echo "  cluster-access-secret (from param): $(params.cluster-access-secret)"
+        echo "  cluster-access-secret (from env):   ${CLUSTER_ACCESS_SECRET_PARAM}"
+        echo ""
+        echo "IMPORTANT: If the above shows empty string, the parameter was not passed from Pipeline!"
         echo ""
 
         echo "=== Checking /credentials directory ==="
         if [[ -d /credentials ]]; then
-          echo "Directory exists. Contents:"
+          echo "✓ Directory exists. Contents:"
           ls -laR /credentials/ || echo "Cannot list /credentials"
+          echo ""
+          echo "File count: $(find /credentials -type f 2>/dev/null | wc -l)"
+          echo "Total size: $(du -sh /credentials 2>/dev/null | cut -f1)"
         else
-          echo "ERROR: /credentials directory does not exist!"
+          echo "✗ ERROR: /credentials directory does not exist!"
+          echo "This means the volume was not mounted at all."
         fi
         echo ""
 
@@ -103,28 +129,60 @@ spec:
           echo "✗ /credentials/kubeconfig NOT FOUND"
           echo ""
           echo "=== Troubleshooting Info ==="
-          echo "Listing all files in /credentials:"
-          find /credentials -type f 2>/dev/null || echo "No files found"
           echo ""
-          echo "Checking if kubectl is available:"
-          which kubectl || echo "kubectl not found in PATH"
+          echo "1. Checking what files exist in /credentials:"
+          if [[ -d /credentials ]]; then
+            FILE_COUNT=$(find /credentials -type f 2>/dev/null | wc -l)
+            echo "   Found ${FILE_COUNT} file(s):"
+            find /credentials -type f 2>/dev/null | while read f; do
+              echo "     - $f (size: $(stat -c%s "$f" 2>/dev/null || echo "unknown") bytes)"
+            done
+          else
+            echo "   /credentials directory does not exist"
+          fi
           echo ""
-          echo "Attempting to list secrets in current namespace (if possible):"
+          echo "2. Checking volume mount configuration:"
+          echo "   Expected secret name: ${CLUSTER_ACCESS_SECRET_PARAM}"
+          echo "   Expected key in secret: kubeconfig"
+          echo "   Mount path: /credentials"
+          echo ""
+          echo "3. Attempting to list secrets in current namespace:"
           # Try to use default service account token
           if [[ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]]; then
-            echo "Found service account token, trying to list secrets..."
             NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
-            echo "Current namespace: ${NAMESPACE}"
+            echo "   Current namespace: ${NAMESPACE}"
             TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
             CA_CERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
             echo ""
-            echo "Secrets starting with 'kfg-' in namespace ${NAMESPACE}:"
-            curl -s --cacert ${CA_CERT} -H "Authorization: Bearer ${TOKEN}" \
+            echo "   Secrets matching 'kfg-*' in namespace ${NAMESPACE}:"
+            SECRET_LIST=$(curl -s --cacert ${CA_CERT} -H "Authorization: Bearer ${TOKEN}" \
               "https://kubernetes.default.svc/api/v1/namespaces/${NAMESPACE}/secrets" \
-              | grep -o '"name":"kfg-[^"]*"' | cut -d'"' -f4 || echo "Failed to list secrets"
+              | grep -o '"name":"kfg-[^"]*"' | cut -d'"' -f4 || echo "")
+            if [[ -n "${SECRET_LIST}" ]]; then
+              echo "${SECRET_LIST}" | while read secret; do
+                echo "     - ${secret}"
+              done
+            else
+              echo "     No secrets starting with 'kfg-' found"
+            fi
+
+            echo ""
+            echo "   Checking if the specified secret exists:"
+            if [[ -n "${CLUSTER_ACCESS_SECRET_PARAM}" ]]; then
+              SECRET_EXISTS=$(curl -s --cacert ${CA_CERT} -H "Authorization: Bearer ${TOKEN}" \
+                "https://kubernetes.default.svc/api/v1/namespaces/${NAMESPACE}/secrets/${CLUSTER_ACCESS_SECRET_PARAM}" \
+                | grep -o '"name":"[^"]*"' | cut -d'"' -f4 || echo "")
+              if [[ -n "${SECRET_EXISTS}" ]]; then
+                echo "     ✓ Secret '${CLUSTER_ACCESS_SECRET_PARAM}' EXISTS in namespace ${NAMESPACE}"
+              else
+                echo "     ✗ Secret '${CLUSTER_ACCESS_SECRET_PARAM}' NOT FOUND in namespace ${NAMESPACE}"
+              fi
+            else
+              echo "     Cannot check - cluster-access-secret parameter is empty!"
+            fi
           else
-            echo "No service account token available"
+            echo "   No service account token available - cannot list secrets"
           fi
         fi
         echo ""
@@ -143,19 +201,44 @@ spec:
           echo "ERROR: Cannot proceed without kubeconfig"
           echo "=========================================="
           echo ""
-          echo "The kubeconfig file is missing. This means:"
+          echo "ROOT CAUSE ANALYSIS:"
           echo ""
-          echo "1. The secret specified in 'cluster-access-secret' parameter doesn't exist, OR"
-          echo "2. The secret exists but doesn't have a 'kubeconfig' key, OR"
-          echo "3. The volume mount failed"
+          if [[ -z "${CLUSTER_ACCESS_SECRET_PARAM}" ]]; then
+            echo "✗ CRITICAL: The 'cluster-access-secret' parameter is EMPTY!"
+            echo ""
+            echo "This means the Pipeline did not pass the parameter to the Task."
+            echo ""
+            echo "Verify in Pipeline YAML that the parameter is correctly mapped:"
+            echo "  - Pipeline parameter: 'cluster-kubeconfig-secret'"
+            echo "  - Task parameter: 'cluster-access-secret'"
+            echo "  - Expected mapping in Pipeline taskRef:"
+            echo "      params:"
+            echo "        - name: cluster-access-secret"
+            echo "          value: '\$(params.cluster-kubeconfig-secret)'"
+          else
+            echo "Parameter 'cluster-access-secret' = '${CLUSTER_ACCESS_SECRET_PARAM}'"
+            echo ""
+            echo "The parameter is set, but the kubeconfig file is missing."
+            echo "Possible causes:"
+            echo ""
+            echo "  1. Secret '${CLUSTER_ACCESS_SECRET_PARAM}' doesn't exist in the namespace"
+            echo "  2. Secret exists but doesn't have a 'kubeconfig' key"
+            echo "  3. Volume mount failed (check pod events)"
+            echo ""
+            echo "Manual verification steps:"
+            echo "  # Check if secret exists"
+            echo "  kubectl get secret ${CLUSTER_ACCESS_SECRET_PARAM} -n <namespace>"
+            echo ""
+            echo "  # Check secret keys"
+            echo "  kubectl get secret ${CLUSTER_ACCESS_SECRET_PARAM} -n <namespace> -o jsonpath='{.data}' | jq 'keys'"
+            echo ""
+            echo "  # Verify kubeconfig key exists and has data"
+            echo "  kubectl get secret ${CLUSTER_ACCESS_SECRET_PARAM} -n <namespace> -o jsonpath='{.data.kubeconfig}' | base64 -d | head -5"
+          fi
           echo ""
-          echo "Expected secret name: $(params.cluster-access-secret)"
+          echo "See detailed troubleshooting info above for more details."
           echo ""
-          echo "Next steps:"
-          echo "  1. Check IntegrationTestScenario has 'cluster-kubeconfig-secret' parameter set"
-          echo "  2. Run: oc get secret <secret-name> -n <namespace>"
-          echo "  3. Verify secret has 'kubeconfig' key: oc get secret <secret-name> -o jsonpath='{.data.kubeconfig}'"
-          echo ""
+          echo "failed" > /shared/port-forward-status
           sleep infinity
           exit 1
         fi
@@ -171,6 +254,7 @@ spec:
         kubectl wait --for=condition=available --timeout=300s deployment/proxy -n konflux-ui || {
           echo "ERROR: Konflux UI proxy deployment not ready"
           kubectl get pods -n konflux-ui
+          echo "failed" > /shared/port-forward-status
           exit 1
         }
 
@@ -185,6 +269,7 @@ spec:
         if [[ -z "${POD_NAME}" ]]; then
           echo "ERROR: Could not find proxy pod"
           kubectl get pods -n konflux-ui
+          echo "failed" > /shared/port-forward-status
           exit 1
         fi
 
@@ -326,8 +411,21 @@ spec:
         #!/usr/bin/env bash
         set -euo pipefail
 
+        echo "=========================================="
+        echo "STEP-RUN-E2E-TEST"
+        echo "=========================================="
         echo "=== Running Cypress E2E Tests ==="
         echo "Job Type: ${JOB_TYPE}"
+        echo ""
+        echo "=== DEBUG: Task Parameters ==="
+        echo "Parameters received by this step:"
+        echo "  JOB_TYPE: ${JOB_TYPE}"
+        echo "  CYPRESS_LOCAL_CLUSTER: ${CYPRESS_LOCAL_CLUSTER}"
+        echo "  CYPRESS_PERIODIC_RUN_STAGE: ${CYPRESS_PERIODIC_RUN_STAGE}"
+        echo ""
+        echo "Note: cluster-access-secret is used by the port-forward sidecar"
+        echo "      Check sidecar logs for parameter passing details"
+        echo ""
 
         # Verify CYPRESS_GH_TOKEN
         if [[ -z "${CYPRESS_GH_TOKEN:-}" ]]; then
@@ -335,6 +433,7 @@ spec:
           exit 1
         fi
         echo "✓ CYPRESS_GH_TOKEN is set (length: ${#CYPRESS_GH_TOKEN})"
+        echo ""
 
         # Configure based on job type
         if [[ ${JOB_TYPE} == 'periodic-stage' ]]; then
@@ -345,22 +444,43 @@ spec:
           echo "Running against local Kind cluster..."
 
           # Wait for port-forward sidecar to be ready using shared marker file
-          echo "Waiting for port-forward sidecar readiness marker..."
+          echo "=== Waiting for port-forward sidecar ==="
+          echo "Checking for readiness marker at /shared/port-forward-status..."
+          echo ""
           MAX_WAIT=60
           ELAPSED=0
 
           while [[ ${ELAPSED} -lt ${MAX_WAIT} ]]; do
             if [[ -f /shared/port-forward-status ]]; then
               STATUS=$(cat /shared/port-forward-status)
+              echo "Status file found! Content: '${STATUS}'"
               if [[ "${STATUS}" == "ready" ]]; then
                 echo "✓ Port-forward sidecar is ready!"
                 break
               elif [[ "${STATUS}" == "failed" ]]; then
-                echo "ERROR: Port-forward sidecar failed to start"
+                echo ""
+                echo "=========================================="
+                echo "ERROR: Port-forward sidecar FAILED"
+                echo "=========================================="
+                echo ""
+                echo "The port-forward sidecar reported a failure."
+                echo "Check the 'port-forward' sidecar logs for details:"
+                echo ""
+                echo "  kubectl logs <pod-name> -c port-forward -n <namespace>"
+                echo ""
+                echo "Common issues:"
+                echo "  1. cluster-access-secret parameter is empty or not passed"
+                echo "  2. Secret doesn't exist in the namespace"
+                echo "  3. Secret exists but missing 'kubeconfig' key"
+                echo "  4. Deployment not ready (timeout waiting for proxy deployment)"
+                echo ""
                 exit 1
               elif [[ "${STATUS}" == "skipped" ]]; then
                 echo "ERROR: Port-forward was skipped but required for local cluster"
+                echo "This should only happen for periodic-stage jobs."
                 exit 1
+              else
+                echo "Unknown status: '${STATUS}' - continuing to wait..."
               fi
             fi
             echo "Waiting for port-forward readiness (${ELAPSED}s/${MAX_WAIT}s)..."
@@ -369,11 +489,30 @@ spec:
           done
 
           if [[ ${ELAPSED} -ge ${MAX_WAIT} ]]; then
+            echo ""
+            echo "=========================================="
             echo "ERROR: Port-forward not ready after ${MAX_WAIT}s"
-            echo "Status file contents:"
-            cat /shared/port-forward-status 2>/dev/null || echo "Status file not found"
+            echo "=========================================="
+            echo ""
+            echo "Status file check:"
+            if [[ -f /shared/port-forward-status ]]; then
+              echo "  Status file exists with content: '$(cat /shared/port-forward-status)'"
+            else
+              echo "  ✗ Status file NOT FOUND at /shared/port-forward-status"
+              echo ""
+              echo "This means the port-forward sidecar never wrote the status file."
+              echo "Possible causes:"
+              echo "  1. Sidecar is still initializing"
+              echo "  2. Sidecar failed before writing status (check sidecar logs)"
+              echo "  3. Shared volume mount issue"
+              echo ""
+              echo "Check sidecar logs:"
+              echo "  kubectl logs <pod-name> -c port-forward -n <namespace>"
+            fi
+            echo ""
             exit 1
           fi
+          echo ""
 
           # Port-forward maps localhost:8080 to nginx HTTPS port (9443)
           export CYPRESS_KONFLUX_BASE_URL="https://localhost:8080"
@@ -488,6 +627,147 @@ spec:
         fi
 
         exit ${EXIT_CODE}
+
+    - name: upload-artifacts-to-oci
+      image: quay.io/konflux-ci/oras:latest
+      workingDir: /tmp/e2e
+      env:
+        - name: OCI_STORAGE
+          value: $(params.oci-storage)
+        - name: GIT_REVISION
+          value: $(params.git-revision)
+        - name: JOB_TYPE
+          value: $(params.job-type)
+        - name: REGISTRY_AUTH_FILE
+          value: /secrets/.dockerconfigjson
+        - name: PIPELINE_RUN_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tekton.dev/pipelineRun']
+      volumeMounts:
+        - name: oci-credentials
+          mountPath: /secrets
+          readOnly: true
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        # Skip if OCI storage not configured
+        if [[ -z "${OCI_STORAGE}" || "${OCI_STORAGE}" == "" ]]; then
+          echo "ℹ OCI storage not configured, skipping artifact upload"
+          exit 0
+        fi
+
+        echo "=========================================="
+        echo "UPLOADING ARTIFACTS TO OCI REGISTRY"
+        echo "=========================================="
+        echo ""
+
+        # Check if artifacts exist
+        if [[ ! -d /tmp/e2e/cypress ]]; then
+          echo "⚠ No artifacts found at /tmp/e2e/cypress"
+          exit 0
+        fi
+
+        # Verify authentication
+        if [[ ! -f "${REGISTRY_AUTH_FILE}" ]]; then
+          echo "ERROR: Registry auth file not found at ${REGISTRY_AUTH_FILE}"
+          echo "Make sure the secret '$(params.oci-credentials-secret)' exists and contains '.dockerconfigjson' key"
+          exit 1
+        fi
+
+        echo "✓ Registry authentication file found"
+        echo ""
+
+        # Generate unique tag based on git revision and timestamp
+        SHORT_SHA="${GIT_REVISION:0:7}"
+        TIMESTAMP=$(date -u +%Y%m%d-%H%M%S)
+
+        # Build the full OCI reference with tag
+        # Remove any existing tag from OCI_STORAGE base
+        OCI_BASE="${OCI_STORAGE%%:*}"
+
+        # Create unique tag: <short-sha>-<timestamp>
+        TAG="${SHORT_SHA}-${TIMESTAMP}"
+        OCI_REF="${OCI_BASE}:${TAG}"
+
+        echo "Configuration:"
+        echo "  Base repository: ${OCI_BASE}"
+        echo "  Tag: ${TAG}"
+        echo "  Full reference: ${OCI_REF}"
+        echo "  Git revision: ${GIT_REVISION}"
+        echo "  Job type: ${JOB_TYPE}"
+        echo "  PipelineRun: ${PIPELINE_RUN_NAME:-N/A}"
+        echo ""
+
+        cd /tmp/e2e/cypress
+
+        # Create a tarball of all artifacts
+        TARBALL="/tmp/cypress-artifacts.tar.gz"
+        echo "Creating tarball of artifacts..."
+        tar czf "${TARBALL}" . 2>/dev/null || {
+          echo "ERROR: Failed to create tarball"
+          exit 1
+        }
+
+        if [[ ! -f "${TARBALL}" ]]; then
+          echo "ERROR: Tarball was not created"
+          exit 1
+        fi
+
+        TARBALL_SIZE=$(du -h "${TARBALL}" | cut -f1)
+        echo "✓ Tarball created: ${TARBALL_SIZE}"
+        echo ""
+
+        # Prepare annotations with metadata
+        CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+        echo "Uploading to OCI registry..."
+        echo "Command: oras push ${OCI_REF}"
+        echo ""
+
+        # Upload using oras with rich annotations
+        oras push "${OCI_REF}" \
+          "${TARBALL}:application/gzip" \
+          --annotation "org.opencontainers.image.title=cypress-e2e-artifacts" \
+          --annotation "org.opencontainers.image.description=Cypress test artifacts (videos, screenshots, reports)" \
+          --annotation "org.opencontainers.image.created=${CREATED_AT}" \
+          --annotation "org.opencontainers.image.revision=${GIT_REVISION}" \
+          --annotation "dev.konflux.job-type=${JOB_TYPE}" \
+          --annotation "dev.konflux.pipeline-run=${PIPELINE_RUN_NAME:-unknown}" \
+          --annotation "dev.konflux.artifact-type=cypress-test-results" || {
+          echo ""
+          echo "ERROR: Failed to push artifacts to OCI registry"
+          echo "This might be due to:"
+          echo "  1. Invalid credentials in secret '$(params.oci-credentials-secret)'"
+          echo "  2. Insufficient permissions to push to ${OCI_BASE}"
+          echo "  3. Network connectivity issues"
+          echo ""
+          echo "To verify credentials:"
+          echo "  oc get secret $(params.oci-credentials-secret) -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | jq"
+          echo ""
+          exit 1
+        }
+
+        echo ""
+        echo "=========================================="
+        echo "✓ ARTIFACTS UPLOADED SUCCESSFULLY"
+        echo "=========================================="
+        echo ""
+        echo "Artifact Details:"
+        echo "  Repository: ${OCI_BASE}"
+        echo "  Tag: ${TAG}"
+        echo "  Full reference: ${OCI_REF}"
+        echo "  Size: ${TARBALL_SIZE}"
+        echo "  Created: ${CREATED_AT}"
+        echo ""
+        echo "To download and extract artifacts:"
+        echo "  oras pull ${OCI_REF}"
+        echo "  tar xzf cypress-artifacts.tar.gz"
+        echo ""
+        echo "To view in browser:"
+        echo "  https://quay.io/repository/konflux_ui_qe/pr-check-artefacts?tab=tags"
+        echo ""
 
     - name: report-to-slack
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14

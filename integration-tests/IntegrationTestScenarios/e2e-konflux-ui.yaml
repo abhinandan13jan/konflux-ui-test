@@ -21,7 +21,7 @@ spec:
     - name: cypress-credentials-secret
       value: cypress-credentials
     - name: cypress-cloud-secret
-      value: cypress-cloud-credentials
+      value: cypress-cloud-credentials-disabled
     - name: slack-credentials-secret
       value: slack-credentials
     - name: debug-pause-minutes
