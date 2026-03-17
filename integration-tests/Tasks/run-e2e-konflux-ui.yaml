@@ -45,6 +45,10 @@ spec:
       description: 'Secret name containing Cypress Cloud credentials (project-id, record-key)'
       type: string
       default: "cypress-cloud-credentials"
+    - name: debug-pause-minutes
+      description: 'Minutes to pause after test for artifact inspection (0 to skip, max 60)'
+      type: string
+      default: "0"
   results:
     - name: e2e-output
       description: 'Result of e2e test'
@@ -406,6 +410,83 @@ spec:
 
         EXIT_CODE=${EXIT_CODE:-0}
         echo ${EXIT_CODE} > /tmp/e2e-exit-code
+
+        # Show artifact locations
+        echo ""
+        echo "=========================================="
+        echo "TEST ARTIFACTS SUMMARY"
+        echo "=========================================="
+
+        if [[ -d /tmp/e2e/cypress ]]; then
+          echo ""
+          echo "Artifacts available at:"
+          echo "  Location: /tmp/e2e/cypress"
+          echo ""
+
+          if ls /tmp/e2e/cypress/videos/*.mp4 >/dev/null 2>&1; then
+            echo "Videos:"
+            ls -lh /tmp/e2e/cypress/videos/
+            echo ""
+          fi
+
+          if [[ -d /tmp/e2e/cypress/screenshots ]] && [[ -n "$(ls -A /tmp/e2e/cypress/screenshots 2>/dev/null)" ]]; then
+            echo "Screenshots:"
+            find /tmp/e2e/cypress/screenshots -type f
+            echo ""
+          fi
+
+          if [[ -f /tmp/e2e/cypress/index.html ]]; then
+            echo "HTML Report:"
+            echo "  /tmp/e2e/cypress/index.html"
+            echo ""
+          fi
+        fi
+
+        # Debug pause for manual artifact inspection
+        DEBUG_PAUSE=$(params.debug-pause-minutes)
+        if [[ "${DEBUG_PAUSE}" != "0" ]] && [[ -n "${DEBUG_PAUSE}" ]]; then
+          PAUSE_SECONDS=$((DEBUG_PAUSE * 60))
+
+          echo "=========================================="
+          echo "DEBUG PAUSE ACTIVATED"
+          echo "=========================================="
+          echo ""
+          echo "Pod will remain alive for ${DEBUG_PAUSE} minute(s)"
+          echo ""
+          echo "To download artifacts, run:"
+          echo ""
+          echo "  # Get this pod name"
+          echo "  POD_NAME=\$(kubectl get pods -n wlin-tenant -l tekton.dev/taskRun --field-selector status.phase=Running -o jsonpath='{.items[0].metadata.name}')"
+          echo ""
+          echo "  # Download all artifacts"
+          echo "  kubectl cp wlin-tenant/\${POD_NAME}:/tmp/e2e/cypress ./cypress-artifacts -c run-e2e-test"
+          echo ""
+          echo "  # Download video only"
+          echo "  kubectl cp wlin-tenant/\${POD_NAME}:/tmp/e2e/cypress/videos ./videos -c run-e2e-test"
+          echo ""
+          echo "  # Download screenshots only"
+          echo "  kubectl cp wlin-tenant/\${POD_NAME}:/tmp/e2e/cypress/screenshots ./screenshots -c run-e2e-test"
+          echo ""
+          echo "  # Download HTML report"
+          echo "  kubectl cp wlin-tenant/\${POD_NAME}:/tmp/e2e/cypress/index.html ./test-report.html -c run-e2e-test"
+          echo ""
+          echo "Pausing now..."
+          echo ""
+
+          # Countdown with status updates
+          REMAINING=${PAUSE_SECONDS}
+          while [[ ${REMAINING} -gt 0 ]]; do
+            MINS=$((REMAINING / 60))
+            SECS=$((REMAINING % 60))
+            echo "⏳ Time remaining: ${MINS}m ${SECS}s (Cancel PipelineRun to exit early)"
+            sleep 60
+            REMAINING=$((REMAINING - 60))
+          done
+
+          echo ""
+          echo "Debug pause complete. Continuing..."
+        fi
+
         exit ${EXIT_CODE}
 
     - name: report-to-slack

@@ -24,6 +24,8 @@ spec:
       value: cypress-cloud-credentials
     - name: slack-credentials-secret
       value: slack-credentials
+    - name: debug-pause-minutes
+      value: "10"
   resolverRef:
     params:
       - name: url
