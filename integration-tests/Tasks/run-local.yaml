@@ -6,31 +6,31 @@ spec:
   params:
     - name: test-name
       type: string
-      description: "The name of the test being executed."
-      default: "ui-test"
+      description: 'The name of the test being executed.'
+      default: 'ui-test'
     - name: git-repo
       type: string
-      default: "konflux-ui"
-      description: "The name of the Git repository containing the E2E tests."
+      default: 'konflux-ui'
+      description: 'The name of the Git repository containing the E2E tests.'
     - name: git-url
       type: string
-      default: "https://github.com/konflux-ci/konflux-ui.git"
-      description: "The URL of the Git repository containing the E2E tests."
+      default: 'https://github.com/konflux-ci/konflux-ui.git'
+      description: 'The URL of the Git repository containing the E2E tests.'
     - name: git-revision
       type: string
-      default: "main"
-      description: "The revision (branch or tag) of the Git repository to checkout."
+      default: 'main'
+      description: 'The revision (branch or tag) of the Git repository to checkout.'
     - name: container-image
       type: string
-      description: "Contain the container name from Konflux Snapshot."
-      default: "quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+      description: 'Contain the container name from Konflux Snapshot.'
+      default: 'quay.io/konflux_ui_qe/konflux-ui-tests:latest'
     - name: component-image
       type: string
       description: 'Container image built from any konflux git repo.'
-      default: "none"
+      default: 'none'
     - name: e2e-timeout
-      description: "Timeout value for running E2E script (cluster bootstrap + E2E tests)"
-      default: "150m"
+      description: 'Timeout value for running E2E script (cluster bootstrap + E2E tests)'
+      default: '150m'
     - name: KUBECONFIG
       default: '/credentials/kubeconfig'
     - name: CYPRESS_GH_TOKEN
@@ -115,61 +115,62 @@ spec:
         mountPath: /var/log-dir/
   steps:
     - name: run-tests
-      image: quay.io/redhat-user-workloads-stage/wlin-tenant/konflux-ui-test@sha256:4a5f2145044cb4b09e91de33bcac95a0e40f0deeaec33a4161e1e5f859a5a791
+      image: quay.io/carawang/konflux-ui-test:dummy-konflux-ui-e2e-2-zqq5q
       onError: continue
       env:
         - name: test-name
-          value: "$(params.test-name)"
+          value: '$(params.test-name)'
         - name: git-repo
-          value: "$(params.git-repo)"
+          value: '$(params.git-repo)'
         - name: git-url
-          value: "$(params.git-url)"
+          value: '$(params.git-url)'
         - name: git-revision
-          value: "$(params.git-revision)"
+          value: '$(params.git-revision)'
         - name: container-image
-          value: "$(params.container-image)"
+          value: '$(params.container-image)'
         - name: component-image
-          value: "$(params.component-image)"
+          value: '$(params.component-image)'
         - name: e2e-timeout
           value: $(params.e2e-timeout)
         - name: KUBECONFIG
-          value: "$(params.KUBECONFIG)"
+          value: '$(params.KUBECONFIG)'
         - name: CYPRESS_GH_TOKEN
-          value: "dummy"
+          value: 'dummy'
         - name: TARGET_BRANCH
-          value: "$(params.TARGET_BRANCH)"
+          value: '$(params.TARGET_BRANCH)'
         - name: SOURCE_BRANCH
-          value: "$(params.SOURCE_BRANCH)"
+          value: '$(params.SOURCE_BRANCH)'
         - name: PR_NUMBER
-          value: "$(params.PR_NUMBER)"
+          value: '$(params.PR_NUMBER)'
         - name: HEAD_SHA
-          value: "$(params.HEAD_SHA)"
+          value: '$(params.HEAD_SHA)'
         - name: CYPRESS_KONFLUX_BASE_URL
-          value: "$(params.CYPRESS_KONFLUX_BASE_URL)"
+          value: '$(params.CYPRESS_KONFLUX_BASE_URL)'
         - name: COMMIT_INFO_SHA
-          value: "$(params.COMMIT_INFO_SHA)"
+          value: '$(params.COMMIT_INFO_SHA)'
         - name: COMMIT_INFO_BRANCH
-          value: "$(params.COMMIT_INFO_BRANCH)"
+          value: '$(params.COMMIT_INFO_BRANCH)'
         - name: COMMIT_INFO_AUTHOR
-          value: "$(params.COMMIT_INFO_AUTHOR)"
+          value: '$(params.COMMIT_INFO_AUTHOR)'
         - name: COMMIT_INFO_MESSAGE
-          value: "$(params.COMMIT_INFO_MESSAGE)"
+          value: '$(params.COMMIT_INFO_MESSAGE)'
         - name: CYPRESS_USERNAME
-          value: "$(params.CYPRESS_USERNAME)"
+          value: '$(params.CYPRESS_USERNAME)'
         - name: CYPRESS_PASSWORD
-          value: "$(params.CYPRESS_PASSWORD)"
+          value: '$(params.CYPRESS_PASSWORD)'
         - name: CYPRESS_BRANCH
-          value: "$(params.CYPRESS_BRANCH)"
+          value: '$(params.CYPRESS_BRANCH)'
         - name: CYPRESS_PROJECT_ID
-          value: "$(params.CYPRESS_PROJECT_ID)"
+          value: '$(params.CYPRESS_PROJECT_ID)'
         - name: CYPRESS_RECORD_KEY
-          value: "$(params.CYPRESS_RECORD_KEY)"
+          value: '$(params.CYPRESS_RECORD_KEY)'
         - name: JOB_TYPE
-          value: "$(params.JOB_TYPE)"
+          value: '$(params.JOB_TYPE)'
       script: |
         #!/bin/bash
          set -euo pipefail
          cat /etc/os-release
+         ss -nltp
          whoami
          echo "running pr"
          ls
