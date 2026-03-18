@@ -170,7 +170,7 @@ spec:
         #!/bin/bash
          set -euo pipefail
          cat /etc/os-release
-         ss -nltp
+         lsof -i -P -n
          whoami
          echo "running pr"
          ls
