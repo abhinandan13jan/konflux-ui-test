@@ -132,6 +132,8 @@ spec:
           value: kfg-$(context.pipelineRun.name)
         - name: component-name
           value: konflux-ui
+        - name: create-test-resources
+          value: false
         - name: component-pr-owner
           value: $(tasks.konflux-ui-pr-metadata.results.pull-request-author)
         - name: component-pr-sha
