@@ -171,8 +171,7 @@ spec:
          set -euo pipefail
          cat /etc/os-release
          ss -nltp
-         netstat -tulpn
-         netstat -a
+         lsof
          whoami
          echo "running pr"
          ls
