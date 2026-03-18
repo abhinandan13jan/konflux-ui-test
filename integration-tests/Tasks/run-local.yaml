@@ -171,7 +171,6 @@ spec:
          set -euo pipefail
          cat /etc/os-release
          ss -nltp
-         lsof
          whoami
          echo "running pr"
          ls
