@@ -85,27 +85,105 @@ spec:
       env:
         - name: JOB_TYPE
           value: $(params.job-type)
-        - name: CLUSTER_SECRET
+        - name: CLUSTER_ACCESS_SECRET_PARAM
           value: $(params.cluster-access-secret)
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
 
-        echo "=== PORT FORWARD SIDECAR START ==="
-        echo "JOB_TYPE: ${JOB_TYPE}"
-        echo "cluster-access-secret param: ${CLUSTER_SECRET}"
+        echo "=========================================="
+        echo "PORT FORWARD SIDECAR - DEBUG INFO"
+        echo "=========================================="
+        echo ""
+        echo "Environment:"
+        echo "  JOB_TYPE: ${JOB_TYPE}"
+        echo ""
+        echo "Task Parameters Received:"
+        echo "  cluster-access-secret (from param): $(params.cluster-access-secret)"
+        echo "  cluster-access-secret (from env):   ${CLUSTER_ACCESS_SECRET_PARAM}"
+        echo ""
+        echo "IMPORTANT: If the above shows empty string, the parameter was not passed from Pipeline!"
         echo ""
 
-        echo "Checking /credentials:"
-        ls -la /credentials/ 2>&1 || echo "Dir not found"
-        echo ""
-
-        if [[ -f /credentials/kubeconfig ]]; then
-          echo "✓ Found kubeconfig ($(wc -c < /credentials/kubeconfig) bytes)"
+        echo "=== Checking /credentials directory ==="
+        if [[ -d /credentials ]]; then
+          echo "✓ Directory exists. Contents:"
+          ls -laR /credentials/ || echo "Cannot list /credentials"
+          echo ""
+          echo "File count: $(find /credentials -type f 2>/dev/null | wc -l)"
+          echo "Total size: $(du -sh /credentials 2>/dev/null | cut -f1)"
         else
-          echo "✗ kubeconfig NOT FOUND"
-          echo "Secret expected: ${CLUSTER_SECRET}"
-          find /credentials -type f 2>/dev/null | head -10
+          echo "✗ ERROR: /credentials directory does not exist!"
+          echo "This means the volume was not mounted at all."
+        fi
+        echo ""
+
+        echo "=== Checking kubeconfig file ==="
+        if [[ -f /credentials/kubeconfig ]]; then
+          echo "✓ Found /credentials/kubeconfig"
+          ls -lh /credentials/kubeconfig
+          echo "File size: $(wc -c < /credentials/kubeconfig) bytes"
+          echo "First 5 lines:"
+          head -5 /credentials/kubeconfig || echo "Cannot read file"
+        else
+          echo "✗ /credentials/kubeconfig NOT FOUND"
+          echo ""
+          echo "=== Troubleshooting Info ==="
+          echo ""
+          echo "1. Checking what files exist in /credentials:"
+          if [[ -d /credentials ]]; then
+            FILE_COUNT=$(find /credentials -type f 2>/dev/null | wc -l)
+            echo "   Found ${FILE_COUNT} file(s):"
+            find /credentials -type f 2>/dev/null | while read f; do
+              echo "     - $f (size: $(stat -c%s "$f" 2>/dev/null || echo "unknown") bytes)"
+            done
+          else
+            echo "   /credentials directory does not exist"
+          fi
+          echo ""
+          echo "2. Checking volume mount configuration:"
+          echo "   Expected secret name: ${CLUSTER_ACCESS_SECRET_PARAM}"
+          echo "   Expected key in secret: kubeconfig"
+          echo "   Mount path: /credentials"
+          echo ""
+          echo "3. Attempting to list secrets in current namespace:"
+          # Try to use default service account token
+          if [[ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]]; then
+            NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+            echo "   Current namespace: ${NAMESPACE}"
+            TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+            CA_CERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+            echo ""
+            echo "   Secrets matching 'kfg-*' in namespace ${NAMESPACE}:"
+            SECRET_LIST=$(curl -s --cacert ${CA_CERT} -H "Authorization: Bearer ${TOKEN}" \
+              "https://kubernetes.default.svc/api/v1/namespaces/${NAMESPACE}/secrets" \
+              | grep -o '"name":"kfg-[^"]*"' | cut -d'"' -f4 || echo "")
+            if [[ -n "${SECRET_LIST}" ]]; then
+              echo "${SECRET_LIST}" | while read secret; do
+                echo "     - ${secret}"
+              done
+            else
+              echo "     No secrets starting with 'kfg-' found"
+            fi
+
+            echo ""
+            echo "   Checking if the specified secret exists:"
+            if [[ -n "${CLUSTER_ACCESS_SECRET_PARAM}" ]]; then
+              SECRET_EXISTS=$(curl -s --cacert ${CA_CERT} -H "Authorization: Bearer ${TOKEN}" \
+                "https://kubernetes.default.svc/api/v1/namespaces/${NAMESPACE}/secrets/${CLUSTER_ACCESS_SECRET_PARAM}" \
+                | grep -o '"name":"[^"]*"' | cut -d'"' -f4 || echo "")
+              if [[ -n "${SECRET_EXISTS}" ]]; then
+                echo "     ✓ Secret '${CLUSTER_ACCESS_SECRET_PARAM}' EXISTS in namespace ${NAMESPACE}"
+              else
+                echo "     ✗ Secret '${CLUSTER_ACCESS_SECRET_PARAM}' NOT FOUND in namespace ${NAMESPACE}"
+              fi
+            else
+              echo "     Cannot check - cluster-access-secret parameter is empty!"
+            fi
+          else
+            echo "   No service account token available - cannot list secrets"
+          fi
         fi
         echo ""
 
@@ -119,14 +197,47 @@ spec:
 
         # Check if kubeconfig exists
         if [[ ! -f /credentials/kubeconfig ]]; then
-          echo "ERROR: kubeconfig not found!"
-          if [[ -z "${CLUSTER_SECRET}" ]]; then
-            echo "CAUSE: cluster-access-secret parameter is EMPTY"
-            echo "Check Pipeline taskRef params mapping"
+          echo "=========================================="
+          echo "ERROR: Cannot proceed without kubeconfig"
+          echo "=========================================="
+          echo ""
+          echo "ROOT CAUSE ANALYSIS:"
+          echo ""
+          if [[ -z "${CLUSTER_ACCESS_SECRET_PARAM}" ]]; then
+            echo "✗ CRITICAL: The 'cluster-access-secret' parameter is EMPTY!"
+            echo ""
+            echo "This means the Pipeline did not pass the parameter to the Task."
+            echo ""
+            echo "Verify in Pipeline YAML that the parameter is correctly mapped:"
+            echo "  - Pipeline parameter: 'cluster-kubeconfig-secret'"
+            echo "  - Task parameter: 'cluster-access-secret'"
+            echo "  - Expected mapping in Pipeline taskRef:"
+            echo "      params:"
+            echo "        - name: cluster-access-secret"
+            echo "          value: '\$(params.cluster-kubeconfig-secret)'"
           else
-            echo "CAUSE: Secret '${CLUSTER_SECRET}' not found or missing 'kubeconfig' key"
-            echo "Verify: kubectl get secret ${CLUSTER_SECRET} -o jsonpath='{.data.kubeconfig}'"
+            echo "Parameter 'cluster-access-secret' = '${CLUSTER_ACCESS_SECRET_PARAM}'"
+            echo ""
+            echo "The parameter is set, but the kubeconfig file is missing."
+            echo "Possible causes:"
+            echo ""
+            echo "  1. Secret '${CLUSTER_ACCESS_SECRET_PARAM}' doesn't exist in the namespace"
+            echo "  2. Secret exists but doesn't have a 'kubeconfig' key"
+            echo "  3. Volume mount failed (check pod events)"
+            echo ""
+            echo "Manual verification steps:"
+            echo "  # Check if secret exists"
+            echo "  kubectl get secret ${CLUSTER_ACCESS_SECRET_PARAM} -n <namespace>"
+            echo ""
+            echo "  # Check secret keys"
+            echo "  kubectl get secret ${CLUSTER_ACCESS_SECRET_PARAM} -n <namespace> -o jsonpath='{.data}' | jq 'keys'"
+            echo ""
+            echo "  # Verify kubeconfig key exists and has data"
+            echo "  kubectl get secret ${CLUSTER_ACCESS_SECRET_PARAM} -n <namespace> -o jsonpath='{.data.kubeconfig}' | base64 -d | head -5"
           fi
+          echo ""
+          echo "See detailed troubleshooting info above for more details."
+          echo ""
           echo "failed" > /shared/port-forward-status
           sleep infinity
           exit 1
