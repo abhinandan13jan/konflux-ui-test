@@ -8,10 +8,13 @@ spec:
   params:
     - name: SNAPSHOT
       description: 'The JSON string representing the snapshot of the application under test.'
-      default: '{"components": [{"name":"test-app", "containerImage": "quay.io/example/repo:latest"}]}'
+      default: '{"components": [{"name":"konflux-ui", "containerImage": "quay.io/konflux_ui_qe/konflux-ui-tests:latest"}]}'
       type: string
     - name: konflux-test-infra-secret
       description: The name of secret where testing infrastructures credentials are stored.
+      type: string
+    - name: cloud-credential-key
+      description: The key secret from konflux-test-infra-secret where all AWS ROSA configurations are stored.
       type: string
     - name: oci-container-repo
       default: 'quay.io/carawang/konflux-ui-test'
@@ -138,7 +141,7 @@ spec:
         - name: id
           value: $(context.pipelineRun.name)
         - name: tags
-          value: 'owner=konflux-devprod@redhat.com,project=Konflux,created-by=integration-pipeline,component=release-service-catalog'
+          value: 'owner=konflux-ui@redhat.com,project=Konflux,created-by=integration-pipeline,component=konflux-ui'
         - name: debug
           value: 'false'
         - name: ownerKind
@@ -182,11 +185,11 @@ spec:
         - name: cluster-access-secret
           value: kfg-$(context.pipelineRun.name)
         - name: component-name
-          value: release-service-catalog
+          value: konflux-ui
         - name: component-pr-owner
           value: $(tasks.konflux-ui-pr-metadata.results.pull-request-author)
         - name: component-pr-sha
-          value: ''
+          value: $(tasks.konflux-ui-pr-metadata.results.git-revision)
         - name: component-pr-source-branch
           value: $(tasks.konflux-ui-pr-metadata.results.source-repo-branch)
         - name: oci-ref
@@ -211,10 +214,12 @@ spec:
           - name: pathInRepo
             value: integration-tests/Tasks/run-e2e-konflux-ui.yaml
       params:
-        - name: job-spec
-          value: '$(tasks.konflux-ui-pr-metadata.results.job-spec)'
+        - name: test-name
+          value: '$(context.pipelineRun.name)'
+        - name: git-repo
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-repo)'
         - name: git-url
-          value: 'https://github.com/testcara/konflux-ui-test'
+          value: '$(tasks.konflux-ui-pr-metadata.results.git-url)'
         - name: git-revision
           value: 'main'
         - name: cypress-credentials-secret
