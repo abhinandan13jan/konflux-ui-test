@@ -82,7 +82,7 @@ spec:
           export CYPRESS_KONFLUX_BASE_URL="https://${NODE_IP}:${NODE_PORT}"
         else
           echo "Kubeconfig not found, falling back to default URL..."
-          export CYPRESS_KONFLUX_BASE_URL="https://3.139.24.102:9443"
+          export CYPRESS_KONFLUX_BASE_URL="https://18.119.225.133:9443"
         fi
         echo "✓ Base URL set to: ${CYPRESS_KONFLUX_BASE_URL}"
 
