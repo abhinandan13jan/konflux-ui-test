@@ -34,7 +34,7 @@ spec:
         optional: true
     - name: dshm
       emptyDir:
-        medium: Memory 
+        medium: Memory
   steps:
     - name: run-e2e-test
       image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
@@ -51,7 +51,7 @@ spec:
           mountPath: /credentials
           readOnly: true
         - name: dshm
-          mountPath:/dev/shm
+          mountPath: /dev/shm
       env:
         - name: KUBECONFIG
           value: /credentials/kubeconfig
