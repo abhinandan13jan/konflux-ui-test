@@ -23,7 +23,7 @@ spec:
     - name: revision
       value: '{{revision}}'
     - name: output-image
-      value: quay.io/redhat-user-workloads-stage/konflux_ui_qe/konflux-ui-tests:{{revision}}
+      value: quay.io/redhat-user-workloads-stage/wlin-tenant/cara-konflux-ui-test-b1228:{{revision}}
     - name: dockerfile
       value: Dockerfile
     - name: skip-checks
