@@ -1,13 +1,29 @@
+---
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: run-local
+  name: run-e2e-konflux-ui
+  labels:
+    konflux-ci/kind: 'true'
+    app.kubernetes.io/version: '0.2'
+    upstream-usable: 'true'
+  annotations:
+    tekton.dev/pipelines.minVersion: '0.44.x'
+    tekton.dev/tags: konflux
 spec:
+  description: |
+    This task performs a full Konflux CI deployment. It clones the specified Git repository,
+    checks out the desired branch, and runs deployment scripts using a kubeconfig retrieved from
+    a Kubernetes secret. It is intended for use in OpenShift Pipelines or other Tekton environments.
   params:
     - name: test-name
       type: string
       description: 'The name of the test being executed.'
       default: 'ui-test'
+    - name: cluster-access-secret
+      type: string
+      description: 'cluster-access-secret-name'
+      default: ''
     - name: git-repo
       type: string
       default: 'konflux-ui'
@@ -93,17 +109,23 @@ spec:
       type: string
       default: 'on-push'
       description: 'Job type for the PR, on-pull, on-push'
+    - name: oci-credentials
+      type: string
+      description: |
+        The secret name containing credentials for container registry where the artifacts will be stored.
+        The secret should contain `data.oci-storage-dockerconfigjson: <dockerconfigjson-content>`
+      default: 'quay-secret'
   volumes:
     - name: credentials
       secret:
-        secretName: konflux-test-infra
+        secretName: $(params.cluster-access-secret)
     - name: workdir
       emptyDir: {}
     - name: logs
       emptyDir: {}
     - name: konflux-test-infra-volume
       secret:
-        secretName: quay-secret
+        secretName: $(params.oci-credentials)
 
   stepTemplate:
     volumeMounts:
@@ -115,7 +137,7 @@ spec:
         mountPath: /var/log-dir/
   steps:
     - name: run-tests
-      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
+      image: $(params.container-image)
       onError: continue
       env:
         - name: test-name
@@ -135,7 +157,7 @@ spec:
         - name: KUBECONFIG
           value: '$(params.KUBECONFIG)'
         - name: CYPRESS_GH_TOKEN
-          value: 'dummy'
+          value: '$(params.CYPRESS_GH_TOKEN)'
         - name: TARGET_BRANCH
           value: '$(params.TARGET_BRANCH)'
         - name: SOURCE_BRANCH
@@ -171,44 +193,42 @@ spec:
          set -euo pipefail
          cat /etc/os-release
          whoami
-         echo "running pr"
          ls
-        #  ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
-        #  export CYPRESS_LOCAL_CLUSTER=false
-        #  export CYPRESS_PERIODIC_RUN_STAGE=true
-        #  export CYPRESS_GH_TOKEN="dummy"
-        #  echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+         export CYPRESS_LOCAL_CLUSTER=false
+         export CYPRESS_PERIODIC_RUN_STAGE=true
+         export CYPRESS_GH_TOKEN="dummy"
+         echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
 
-        #  echo "=== COMMIT_INFO_* ==="
-        #  echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
-        #  echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
-        #  echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
-        #  echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
-        #  echo "================================="
+         echo "=== COMMIT_INFO_* ==="
+         echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
+         echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
+         echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
+         echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
+         echo "================================="
 
-        #  COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
-        #      -v $PWD/e2e-tests:/e2e:Z,U \
-        #      --timeout=3600 \
-        #      -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
-        #      -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
-        #      -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
-        #      -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
-        #      -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
-        #      -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
-        #      -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
-        #      -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
+         COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
+             -v $PWD/e2e-tests:/e2e:Z,U \
+             --timeout=3600 \
+             -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
+             -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
+             -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
+             -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
+             -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
+             -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
+             -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
+             -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
 
-        #  # build array of env vars to pass to podman (only include non-empty values)
-        #  COMMIT_ENV_ARGS_ARRAY=()
-        #  [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
-        #  [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
-        #  [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
-        #  [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
+         # build array of env vars to pass to podman (only include non-empty values)
+         COMMIT_ENV_ARGS_ARRAY=()
+         [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
+         [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
+         [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
+         [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
 
-        #  echo "Running tests from Happy path"
+         echo "Running tests from Happy path"
 
-        #  TEST_RUN=0
-        #  set -e
-        #  echo "running pr"
-        #  ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
+         TEST_RUN=0
+         set -e
+         echo "running pr"
+         ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
          exit 0
