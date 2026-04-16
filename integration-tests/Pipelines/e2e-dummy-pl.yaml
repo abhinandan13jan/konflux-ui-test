@@ -13,9 +13,7 @@ spec:
     - name: konflux-test-infra-secret
       description: The name of secret where testing infrastructures credentials are stored.
       type: string
-    - name: cloud-credential-key
-      description: The key secret from konflux-test-infra-secret where all AWS ROSA configurations are stored.
-      type: string
+      default: konflux-test-infra
     - name: oci-container-repo
       default: 'quay.io/carawang/konflux-ui-test'
       description: The ORAS container used to store all test artifacts.
