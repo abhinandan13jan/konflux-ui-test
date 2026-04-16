@@ -16,7 +16,7 @@ RUN echo "Running list"
 RUN ls -la
 
 RUN cd /tmp/ 
-RUN "Listing /tmp/"
+RUN echo "Listing tmp"
 RUN ls -la && \
     cd ../
 
