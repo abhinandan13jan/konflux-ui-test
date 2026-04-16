@@ -115,7 +115,7 @@ spec:
         mountPath: /var/log-dir/
   steps:
     - name: run-tests
-      image: https://quay.io/repository/konflux_ui_qe/konflux-ui-tests?tab=tags&tag=pr-53:latest
+      image: quay.io/konflux_ui_qe/konflux-ui-tests:pr-53
       onError: continue
       env:
         - name: test-name
