@@ -209,6 +209,7 @@ spec:
           operator: notin
           values: ['red-hat-konflux[bot]']
       runAfter:
+        - provision-kind-cluster
         - deploy-konflux
       taskRef:
         resolver: git
