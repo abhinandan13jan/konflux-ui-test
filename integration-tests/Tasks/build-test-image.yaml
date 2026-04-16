@@ -113,7 +113,7 @@ spec:
             --verbosity=info \
             --skip-tls-verify
 
-          echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)" > $(results.test-image.path)
+          echo -n "$(params.test-image-repo)/pr-$(params.pull-request-number)" > $(results.test-image.path)
           echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)--instrumented"
 
     - name: show-result
