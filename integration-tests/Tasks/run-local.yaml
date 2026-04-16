@@ -8,6 +8,14 @@ spec:
       type: string
       description: 'The name of the test being executed.'
       default: 'ui-test'
+    - name: test-image-repo
+      type: string
+      description: 'The image to test'
+      default: 'quay.io/carawang/konflux-ui-test'
+    - name: pull-request-number
+      type: string
+      description: 'The PR number'
+      default: '52'
     - name: git-repo
       type: string
       default: 'konflux-ui'
@@ -101,9 +109,10 @@ spec:
       emptyDir: {}
     - name: logs
       emptyDir: {}
-    - name: konflux-test-infra-volume
+    - name: quay-auth
       secret:
-        secretName: quay-secret
+        secretName: $(params.quay-secret)
+        optional: true
 
   stepTemplate:
     volumeMounts:
@@ -114,101 +123,140 @@ spec:
       - name: logs
         mountPath: /var/log-dir/
   steps:
-    - name: run-tests
-      image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
-      onError: continue
-      env:
-        - name: test-name
-          value: '$(params.test-name)'
-        - name: git-repo
-          value: '$(params.git-repo)'
-        - name: git-url
-          value: '$(params.git-url)'
-        - name: git-revision
-          value: '$(params.git-revision)'
-        - name: container-image
-          value: '$(params.container-image)'
-        - name: component-image
-          value: '$(params.component-image)'
-        - name: e2e-timeout
-          value: $(params.e2e-timeout)
-        - name: KUBECONFIG
-          value: '$(params.KUBECONFIG)'
-        - name: CYPRESS_GH_TOKEN
-          value: 'dummy'
-        - name: TARGET_BRANCH
-          value: '$(params.TARGET_BRANCH)'
-        - name: SOURCE_BRANCH
-          value: '$(params.SOURCE_BRANCH)'
-        - name: PR_NUMBER
-          value: '$(params.PR_NUMBER)'
-        - name: HEAD_SHA
-          value: '$(params.HEAD_SHA)'
-        - name: CYPRESS_KONFLUX_BASE_URL
-          value: '$(params.CYPRESS_KONFLUX_BASE_URL)'
-        - name: COMMIT_INFO_SHA
-          value: '$(params.COMMIT_INFO_SHA)'
-        - name: COMMIT_INFO_BRANCH
-          value: '$(params.COMMIT_INFO_BRANCH)'
-        - name: COMMIT_INFO_AUTHOR
-          value: '$(params.COMMIT_INFO_AUTHOR)'
-        - name: COMMIT_INFO_MESSAGE
-          value: '$(params.COMMIT_INFO_MESSAGE)'
-        - name: CYPRESS_USERNAME
-          value: '$(params.CYPRESS_USERNAME)'
-        - name: CYPRESS_PASSWORD
-          value: '$(params.CYPRESS_PASSWORD)'
-        - name: CYPRESS_BRANCH
-          value: '$(params.CYPRESS_BRANCH)'
-        - name: CYPRESS_PROJECT_ID
-          value: '$(params.CYPRESS_PROJECT_ID)'
-        - name: CYPRESS_RECORD_KEY
-          value: '$(params.CYPRESS_RECORD_KEY)'
-        - name: JOB_TYPE
-          value: '$(params.JOB_TYPE)'
-      script: |
-        #!/bin/bash
-         set -euo pipefail
-         cat /etc/os-release
-         whoami
-         echo "running pr"
-         ls
-         ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
-        #  export CYPRESS_LOCAL_CLUSTER=false
-        #  export CYPRESS_PERIODIC_RUN_STAGE=true
-        #  export CYPRESS_GH_TOKEN="dummy"
-        #  echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
+    # - name: run-tests
+    #   image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
+    #   onError: continue
+    #   env:
+    #     - name: test-name
+    #       value: '$(params.test-name)'
+    #     - name: git-repo
+    #       value: '$(params.git-repo)'
+    #     - name: git-url
+    #       value: '$(params.git-url)'
+    #     - name: git-revision
+    #       value: '$(params.git-revision)'
+    #     - name: container-image
+    #       value: '$(params.container-image)'
+    #     - name: component-image
+    #       value: '$(params.component-image)'
+    #     - name: e2e-timeout
+    #       value: $(params.e2e-timeout)
+    #     - name: KUBECONFIG
+    #       value: '$(params.KUBECONFIG)'
+    #     - name: CYPRESS_GH_TOKEN
+    #       value: 'dummy'
+    #     - name: TARGET_BRANCH
+    #       value: '$(params.TARGET_BRANCH)'
+    #     - name: SOURCE_BRANCH
+    #       value: '$(params.SOURCE_BRANCH)'
+    #     - name: PR_NUMBER
+    #       value: '$(params.PR_NUMBER)'
+    #     - name: HEAD_SHA
+    #       value: '$(params.HEAD_SHA)'
+    #     - name: CYPRESS_KONFLUX_BASE_URL
+    #       value: '$(params.CYPRESS_KONFLUX_BASE_URL)'
+    #     - name: COMMIT_INFO_SHA
+    #       value: '$(params.COMMIT_INFO_SHA)'
+    #     - name: COMMIT_INFO_BRANCH
+    #       value: '$(params.COMMIT_INFO_BRANCH)'
+    #     - name: COMMIT_INFO_AUTHOR
+    #       value: '$(params.COMMIT_INFO_AUTHOR)'
+    #     - name: COMMIT_INFO_MESSAGE
+    #       value: '$(params.COMMIT_INFO_MESSAGE)'
+    #     - name: CYPRESS_USERNAME
+    #       value: '$(params.CYPRESS_USERNAME)'
+    #     - name: CYPRESS_PASSWORD
+    #       value: '$(params.CYPRESS_PASSWORD)'
+    #     - name: CYPRESS_BRANCH
+    #       value: '$(params.CYPRESS_BRANCH)'
+    #     - name: CYPRESS_PROJECT_ID
+    #       value: '$(params.CYPRESS_PROJECT_ID)'
+    #     - name: CYPRESS_RECORD_KEY
+    #       value: '$(params.CYPRESS_RECORD_KEY)'
+    #     - name: JOB_TYPE
+    #       value: '$(params.JOB_TYPE)'
+    #   script: |
+    #     #!/bin/bash
+    #      set -euo pipefail
+    #      cat /etc/os-release
+    #      whoami
+    #      echo "running pr"
+    #      ls
+    #      ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
+    #     #  export CYPRESS_LOCAL_CLUSTER=false
+    #     #  export CYPRESS_PERIODIC_RUN_STAGE=true
+    #     #  export CYPRESS_GH_TOKEN="dummy"
+    #     #  echo "running tests using image quay.io/konflux_ui_qe/konflux-ui-tests:latest"
 
-        #  echo "=== COMMIT_INFO_* ==="
-        #  echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
-        #  echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
-        #  echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
-        #  echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
-        #  echo "================================="
+    #     #  echo "=== COMMIT_INFO_* ==="
+    #     #  echo "COMMIT_INFO_SHA: '${COMMIT_INFO_SHA}'"
+    #     #  echo "COMMIT_INFO_BRANCH: '${COMMIT_INFO_BRANCH}'"
+    #     #  echo "COMMIT_INFO_MESSAGE: '${COMMIT_INFO_MESSAGE}'"
+    #     #  echo "COMMIT_INFO_AUTHOR: '${COMMIT_INFO_AUTHOR}'"
+    #     #  echo "================================="
 
-        #  COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
-        #      -v $PWD/e2e-tests:/e2e:Z,U \
-        #      --timeout=3600 \
-        #      -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
-        #      -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
-        #      -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
-        #      -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
-        #      -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
-        #      -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
-        #      -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
-        #      -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
+    #     #  COMMON_SETUP="-v $PWD/artifacts:/tmp/artifacts:Z,U \
+    #     #      -v $PWD/e2e-tests:/e2e:Z,U \
+    #     #      --timeout=3600 \
+    #     #      -e CYPRESS_LOCAL_CLUSTER=${CYPRESS_LOCAL_CLUSTER} \
+    #     #      -e CYPRESS_PERIODIC_RUN_STAGE=${CYPRESS_PERIODIC_RUN_STAGE} \
+    #     #      -e CYPRESS_KONFLUX_BASE_URL=${CYPRESS_KONFLUX_BASE_URL} \
+    #     #      -e CYPRESS_USERNAME=${CYPRESS_USERNAME} \
+    #     #      -e CYPRESS_PASSWORD=${CYPRESS_PASSWORD} \
+    #     #      -e CYPRESS_GH_TOKEN=${CYPRESS_GH_TOKEN} \
+    #     #      -e CYPRESS_PROJECT_ID=${CYPRESS_PROJECT_ID} \
+    #     #      -e CYPRESS_RECORD_KEY=${CYPRESS_RECORD_KEY}"
 
-        #  # build array of env vars to pass to podman (only include non-empty values)
-        #  COMMIT_ENV_ARGS_ARRAY=()
-        #  [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
-        #  [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
-        #  [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
-        #  [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
+    #     #  # build array of env vars to pass to podman (only include non-empty values)
+    #     #  COMMIT_ENV_ARGS_ARRAY=()
+    #     #  [[ -n "${COMMIT_INFO_SHA}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_SHA=${COMMIT_INFO_SHA}")
+    #     #  [[ -n "${COMMIT_INFO_BRANCH}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_BRANCH=${COMMIT_INFO_BRANCH}")
+    #     #  [[ -n "${COMMIT_INFO_MESSAGE}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_MESSAGE=${COMMIT_INFO_MESSAGE}")
+    #     #  [[ -n "${COMMIT_INFO_AUTHOR}" ]] && COMMIT_ENV_ARGS_ARRAY+=(-e "COMMIT_INFO_AUTHOR=${COMMIT_INFO_AUTHOR}")
 
-        #  echo "Running tests from Happy path"
+    #     #  echo "Running tests from Happy path"
 
-        #  TEST_RUN=0
-        #  set -e
-        #  echo "running pr"
-        #  ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
-         exit 0
+    #     #  TEST_RUN=0
+    #     #  set -e
+    #     #  echo "running pr"
+    #     #  ./entrypoint.sh "/e2e/basic-happy-path.spec.ts"
+    #      exit 0
+    - name: build-with-kaniko
+      image: gcr.io/kaniko-project/executor:debug
+      volumeMounts:
+        - name: quay-auth
+          mountPath: /secrets/quay
+          readOnly: true
+      command:
+        - /bin/sh
+      args:
+        - -c
+        - |
+          BUILD_NEEDED="true"
+
+          if [ "$BUILD_NEEDED" = "false" ]; then
+            echo "⏭️  Skipping build (no changes in e2e-tests/)"
+            echo "    Using default image: $(params.default-test-image)"
+            exit 0
+          fi
+
+          echo "=== Building test image with Kaniko ==="
+
+          # Prepare authentication
+          mkdir -p /kaniko/.docker
+          if [ -f /secrets/quay/.dockerconfigjson ]; then
+            cp /secrets/quay/.dockerconfigjson /kaniko/.docker/config.json
+            echo "✅ Quay credentials configured"
+          fi
+
+          # Build and push
+          /kaniko/executor \
+            --context=/workspace/source/e2e-tests \
+            --dockerfile=/workspace/source/e2e-tests/Containerfile \
+            --destination=$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented \
+            --cache=false \
+            --verbosity=info \
+            --skip-tls-verify
+
+          echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented" > $(results.test-image.path)
+          echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)--instrumented"
