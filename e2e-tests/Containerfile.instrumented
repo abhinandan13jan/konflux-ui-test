@@ -38,17 +38,16 @@ RUN ls -la && \
 RUN cd /tmp/e2e && \
     umask 0002 && \
     npm i
-    npm run build:instrumented
-
-# Label to identify this as an instrumented image
-LABEL io.konflux.coverage.instrumented="true" \
-      io.konflux.coverage.provider="istanbul-v8"
+RUN npm run build:instrumented
 
 RUN node_modules/.bin/cypress install && \
     mkdir -p /tmp/artifacts && \
     chmod -R a+rwx /tmp/artifacts ${CYPRESS_CACHE_FOLDER}
 
-
+# Label to identify this as an instrumented image
+LABEL io.konflux.coverage.instrumented="true" \
+      io.konflux.coverage.provider="istanbul-v8"
+      
 WORKDIR /tmp/
 COPY --chown=node:root --chmod=775 entrypoint.sh /tmp/
 
