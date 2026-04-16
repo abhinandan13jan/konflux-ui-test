@@ -105,27 +105,18 @@ spec:
       type: string
       default: 'on-push'
       description: 'Job type for the PR, on-pull, on-push'
+  results:
+    - name: test-image
+      description: 'The test image to use for E2E tests'
+  workspaces:
+    - name: source
+      description: 'Workspace for cloning git repo and building'
+      optional: true
   volumes:
-    - name: credentials
-      secret:
-        secretName: konflux-test-infra
-    - name: workdir
-      emptyDir: {}
-    - name: logs
-      emptyDir: {}
     - name: quay-auth
       secret:
         secretName: $(params.quay-secret)
         optional: true
-
-  stepTemplate:
-    volumeMounts:
-      - name: credentials
-        mountPath: /credentials
-      - name: workdir
-        mountPath: /var/workdir
-      - name: logs
-        mountPath: /var/log-dir/
   steps:
     # - name: run-tests
     #   image: quay.io/konflux_ui_qe/konflux-ui-tests:latest
@@ -256,7 +247,7 @@ spec:
           # Build and push
           /kaniko/executor \
             --context=/workspace/source/e2e-tests \
-            --dockerfile=/workspace/source/e2e-tests/Containerfile \
+            --dockerfile=/workspace/source/e2e-tests/Containerfile.instrumented \
             --destination=$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented \
             --cache=false \
             --verbosity=info \
