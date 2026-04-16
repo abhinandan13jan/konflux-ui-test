@@ -231,7 +231,7 @@ spec:
         - name: default-test-image
           value: 'quay.io/konflux_ui_qe/konflux-ui-tests:latest'
         - name: test-image-repo
-          value: 'quay.io/konflux_ui_qe/konflux-ui-tests'
+          value: '$(params.oci-container-repo)'
         - name: quay-secret
           value: $(params.oci-credentials-secret)
         - name: pr-test-image
