@@ -12,11 +12,12 @@ USER node:0
 COPY --chown=node:root --chmod=775 . /tmp/e2e
 RUN chmod -R 775 /tmp/e2e
 
-RUN echo "Running list" && \
-    ls -la
+RUN echo "Running list" 
+RUN ls -la
 
-RUN cd /tmp/ && \
-    ls -la && \
+RUN cd /tmp/ 
+RUN "Listing /tmp/"
+RUN ls -la && \
     cd ../
 
 # COPY @types @types
