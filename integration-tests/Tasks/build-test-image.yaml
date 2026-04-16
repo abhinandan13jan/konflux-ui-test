@@ -56,129 +56,36 @@ spec:
         secretName: $(params.quay-secret)
         optional: true
   steps:
-    - name: clone-konflux-ci
-      image: quay.io/openshift-pipeline/pipelines-git-init-rhel9@sha256:7eee14366c516d92cf7480c9bc256cf0e544bf06da5d46ffb5e8bfe3e448326c
-      onError: continue
-      workingDir: /var/workdir
-      securityContext:
-        runAsUser: 0
-      args:
-        - -url=$(params.repo-url)
-        - -revision=$(params.repo-branch)
-        - -path=.
-    - name: solve-pr-pairing
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
-      onError: continue
-      workingDir: /var/workdir
-      when:
-        - input: "$(params.component-name)"
-          operator: notin
-          values: [""]
-      env:
-        - name: EVENT_TYPE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['pac.test.appstudio.openshift.io/event-type']
-        - name: COMPONENT_NAME
-          value: "$(params.component-name)"
-        - name: IMAGE_TAG
-          value: "$(params.component-image-tag)"
-        - name: PR_SOURCE_BRANCH
-          value: "$(params.component-pr-source-branch)"
-        - name: PR_AUTHOR
-          value: "$(params.component-pr-owner)"
-        - name: PR_SHA
-          value: "$(params.component-pr-sha)"
+    - name: clone-and-check
+      image: alpine/git:latest
       script: |
-        #!/bin/bash
-        set -euo pipefail
+        #!/bin/sh
+        set -eu
 
-        {
-          echo "[INFO] Fetching and executing solve-pr-pairing.sh..."
-          curl -sSfL https://raw.githubusercontent.com/konflux-ci/tekton-integration-catalog/main/scripts/konflux-ci-deploy/solve-pr-pairing.sh | bash
-        } 2>&1 | tee -a "$LOG_FILENAME"
-    - name: update-kustomization
-      image: quay.io/konflux-ci/tekton-integration-catalog/utils:latest
-      onError: continue
-      workingDir: /var/workdir
-      when:
-        - input: "$(params.component-name)"
-          operator: notin
-          values: [""]
-      env:
-        - name: SOURCE_REPO_URL
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.annotations['pac.test.appstudio.openshift.io/source-repo-url']
-      script: |
-        #!/bin/bash
-        set -euo pipefail
+        echo "=== Cloning repository and checking for changes ==="
 
-        {
-          if [ -f /var/workdir/.env ]; then
-            echo "[INFO] Loading env vars from /var/workdir/.env: $(cat /var/workdir/.env)"
-            source /var/workdir/.env
-          else
-            echo "[INFO] Loading env vars from parameters"
+        # Clone to /workspace/source
+        git clone $(params.git-url) /workspace/source
+        cd /workspace/source
+        git checkout $(params.git-revision)
 
-            COMPONENT_NAME="$(params.component-name)"
-            IMAGE_REPO="$(params.component-image-repository)"
-            IMAGE_TAG="$(params.component-image-tag)"
-            PR_OWNER="$(params.component-pr-owner)"
-            PR_SHA="$(params.component-pr-sha)"
-          fi
+        # Check if e2e-tests directory has changes compared to target branch
+        git fetch origin $(params.target-branch)
 
-          # Handles cases when PR is created from upstream repository branches (i.e. branches created by *[bot])
-          SOURCE_REPO_URL="${SOURCE_REPO_URL:-}"
-          SOURCE_REPO_OWNER="${PR_OWNER}"
-
-          if [[ -n "$SOURCE_REPO_URL" && "$SOURCE_REPO_URL" != *"/$SOURCE_REPO_OWNER/"* ]]; then
-            SOURCE_REPO_OWNER=$(echo "$SOURCE_REPO_URL" | sed -E 's|https://github.com/([^/]+)/.*|\1|')
-            echo "[INFO] SOURCE_REPO_OWNER updated to: $SOURCE_REPO_OWNER"
-          fi
-
-          # Repo names do not match the ones of the component. Try to find the right kustomization.yaml based on the component name.
-          KUSTOMIZATION_PATH=$(find konflux-ci/ -type f -name "kustomization.yaml" -path "*${COMPONENT_NAME%-service}*/core/*" | head -n 1)
-
-          # Check if the file exists
-          if [[ ! -f "${KUSTOMIZATION_PATH}" ]]; then
-            echo "[WARNING] No substitutions will be applied as the kustomization file for $(params.component-name) has not been found."
-            exit 0
-          fi
-
-          # Apply substitutions
-          if [[ -n "$IMAGE_REPO" ]]; then
-            echo "[INFO] Updating image repository to $IMAGE_REPO"
-            yq -i e "(.images.[] | select(.name==\"quay.io/konflux-ci/${COMPONENT_NAME}\")) |= .newName=\"${IMAGE_REPO}\"" "$KUSTOMIZATION_PATH"
-          fi
-
-          if [[ -n "$IMAGE_TAG" ]]; then
-            echo "[INFO] Updating image tag to $IMAGE_TAG"
-            yq -i e "(.images.[] | select(.name==\"quay.io/konflux-ci/${COMPONENT_NAME}\")) |= .newTag=\"${IMAGE_TAG}\"" "$KUSTOMIZATION_PATH"
-          fi
-
-          if [[ -n "$SOURCE_REPO_OWNER" && -n "$PR_SHA" ]]; then
-            echo "[INFO] Updating GitHub reference to $SOURCE_REPO_OWNER@$PR_SHA"
-            yq -i e "(.resources[] | select(. ==\"*github.com/konflux-ci/${COMPONENT_NAME}/config/default*\")) |= \"https://github.com/${SOURCE_REPO_OWNER}/${COMPONENT_NAME}/config/default?ref=${PR_SHA}\"" "$KUSTOMIZATION_PATH"
-            yq -i e "(.resources[] | select(. ==\"*github.com/konflux-ci/${COMPONENT_NAME}/config/snapshotgc*\")) |= \"https://github.com/${SOURCE_REPO_OWNER}/${COMPONENT_NAME}/config/snapshotgc?ref=${PR_SHA}\"" "$KUSTOMIZATION_PATH"
-          fi
-        } 2>&1 | tee -a "$LOG_FILENAME"
+        if git diff --name-only origin/$(params.target-branch)...HEAD | grep -q "^e2e-tests/"; then
+          echo "✅ Changes detected in e2e-tests/"
+          echo "true" > /workspace/build-needed
+        else
+          echo "ℹ️  No changes in e2e-tests/"
+          echo "false" > /workspace/build-needed
+          echo -n "$(params.default-test-image)" > $(results.test-image.path)
+        fi
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
       volumeMounts:
         - name: quay-auth
           mountPath: /secrets/quay
           readOnly: true
-        - name: cluster-credentials
-          secret:
-            secretName: $(params.cluster-access-secret)
-        - name: workdir
-          emptyDir: {}
-        - name: logs
-          emptyDir: {}
-        - name: build-credentials
-          secret:
-            secretName: $(params.build-credentials)
       command:
         - /bin/sh
       args:
