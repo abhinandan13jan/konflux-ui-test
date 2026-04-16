@@ -236,6 +236,8 @@ spec:
           value: $(params.oci-credentials-secret)
         - name: pr-test-image
           value: 'quay.io/konflux_ui_qe/konflux-ui-tests:pr-$(tasks.konflux-ui-pr-metadata.results.pull-request-number)'
+        - name: component-image
+          value: '$(tasks.konflux-ui-pr-metadata.results.container-image)'
     - name: monitor-webhook-logs
       when:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
