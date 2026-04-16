@@ -131,10 +131,3 @@ spec:
         echo ""
         echo "📦 Final test image: $(cat $(results.test-image.path))"
 
-    - name: run-e2e
-      image: '$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented'
-      script: |
-        #!/bin/sh
-        echo $(whoami)"
-        ls
-
