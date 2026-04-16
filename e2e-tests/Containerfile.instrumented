@@ -1,20 +1,14 @@
-FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
-
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-linux-amd64" && \
-    mv cosign-linux-amd64 /usr/local/bin/cosign && \
-    chmod +x /usr/local/bin/cosign
-
-USER node:0
-
-COPY --chown=node:root --chmod=775 . /tmp/e2e
-RUN chmod -R 775 /tmp/e2e
-
 FROM registry.access.redhat.com/ubi9/nodejs-20@sha256:938970e0012ddc784adda181ede5bc00a4dfda5e259ee4a57f67973720a565d1 as builder
 
 WORKDIR /tmp/src
+
+USER node:0
+
+COPY --chown=node:root --chmod=775 . /tmp/src
+RUN chmod -R 775 /tmp/src
+
+RUN cd /tmp/src && \
+    umask 0002
 
 # Copy source files
 COPY @types @types
@@ -30,12 +24,27 @@ COPY aliases.config.js aliases.config.js
 # Note: .swcrc is not needed for instrumented build as we use babel-loader
 
 # Install dependencies and build instrumented version
-RUN cd /src && \
-    umask 0002 && \
-    npm i && \
+
+RUN npm i && \
     npm run build:instrumented
 
-RUN cd ../e2e && \
+RUN cd ../../
+
+FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
+
+COPY --chown=node:root --chmod=775 . /tmp/e2e
+RUN chmod -R 775 /tmp/e2e
+
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-linux-amd64" && \
+    mv cosign-linux-amd64 /usr/local/bin/cosign && \
+    chmod +x /usr/local/bin/cosign
+
+USER node:0
+
+RUN cd /tmp/e2e && \
     umask 0002 && \
     npm i
 
