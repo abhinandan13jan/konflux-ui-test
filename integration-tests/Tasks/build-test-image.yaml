@@ -108,13 +108,13 @@ spec:
           /kaniko/executor \
             --context=/workspace/source/e2e-tests \
             --dockerfile=/workspace/source/e2e-tests/Containerfile \
-            --destination=$(params.test-image-repo)/pr-$(params.pull-request-number)--instrumented \
+            --destination=$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented \
             --cache=false \
             --verbosity=info \
             --skip-tls-verify
 
-          echo -n "$(params.test-image-repo)/pr-$(params.pull-request-number)--instrumented" > $(results.test-image.path)
-          echo "✅ Image built and pushed: $(params.test-image-repo)/pr-$(params.pull-request-number)--instrumented"
+          echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented" > $(results.test-image.path)
+          echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)--instrumented"
 
     - name: show-result
       image: alpine:latest
