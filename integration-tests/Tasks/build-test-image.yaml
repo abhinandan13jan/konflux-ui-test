@@ -104,7 +104,7 @@ spec:
             echo "✅ Quay credentials configured"
           fi
 
-          Build and push
+          # Build and push
           /kaniko/executor \
             --context=/workspace/source/e2e-tests \
             # --dockerfile=/workspace/source/e2e-tests/Containerfile \
