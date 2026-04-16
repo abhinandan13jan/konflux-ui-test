@@ -12,33 +12,31 @@ USER node:0
 COPY --chown=node:root --chmod=775 . /tmp/e2e
 RUN chmod -R 775 /tmp/e2e
 
-RUN echo "Running list" 
-RUN ls -la
+FROM registry.access.redhat.com/ubi9/nodejs-20@sha256:938970e0012ddc784adda181ede5bc00a4dfda5e259ee4a57f67973720a565d1 as builder
 
-RUN cd /tmp/ 
-RUN echo "Listing tmp"
-RUN ls -la && \
-    cd ../
+WORKDIR /tmp/src
+RUN npm install yarn --global
 
-# COPY @types @types
-# COPY public public
-# COPY src src
-# COPY package.json package.json
-# COPY tsconfig.json tsconfig.json
-# COPY webpack.config.js webpack.config.js
-# COPY webpack.instrumented.config.js webpack.instrumented.config.js
-# COPY webpack.prod.config.js webpack.prod.config.js
-# COPY yarn.lock yarn.lock
-# COPY aliases.config.js aliases.config.js
+# Copy source files
+COPY @types @types
+COPY public public
+COPY src src
+COPY package.json package.json
+COPY tsconfig.json tsconfig.json
+COPY webpack.config.js webpack.config.js
+COPY webpack.instrumented.config.js webpack.instrumented.config.js
+COPY webpack.prod.config.js webpack.prod.config.js
+COPY yarn.lock yarn.lock
+COPY aliases.config.js aliases.config.js
+# Note: .swcrc is not needed for instrumented build as we use babel-loader
 
-# # Install dependencies and build instrumented version
-# RUN yarn install
-# RUN yarn build:instrumented
+# Install dependencies and build instrumented version
+RUN yarn install
+RUN yarn build:instrumented
 
-RUN cd /tmp/e2e && \
+RUN cd /e2e && \
     umask 0002 && \
     npm i
-RUN npm run build:instrumented
 
 RUN node_modules/.bin/cypress install && \
     mkdir -p /tmp/artifacts && \
@@ -47,7 +45,7 @@ RUN node_modules/.bin/cypress install && \
 # Label to identify this as an instrumented image
 LABEL io.konflux.coverage.instrumented="true" \
       io.konflux.coverage.provider="istanbul-v8"
-      
+
 WORKDIR /tmp/
 COPY --chown=node:root --chmod=775 entrypoint.sh /tmp/
 
