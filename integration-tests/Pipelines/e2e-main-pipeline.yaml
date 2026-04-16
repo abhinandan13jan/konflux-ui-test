@@ -277,7 +277,7 @@ spec:
             value: integration-tests/Tasks/run-e2e-konflux-ui.yaml
       params:
         - name: test-image
-          value: '$(tasks.build-test-image.results.test-image)'
+          value: 'quay.io/konflux_ui_qe/konflux-ui-tests:pr-$(tasks.konflux-ui-pr-metadata.results.pull-request-number)'
         - name: test-name
           value: '$(context.pipelineRun.name)'
         - name: git-repo
