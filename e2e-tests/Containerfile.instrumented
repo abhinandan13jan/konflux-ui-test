@@ -35,13 +35,14 @@ RUN ls -la && \
 # RUN yarn install
 # RUN yarn build:instrumented
 
-# Label to identify this as an instrumented image
-LABEL io.konflux.coverage.instrumented="true" \
-      io.konflux.coverage.provider="istanbul-v8"
-
 RUN cd /tmp/e2e && \
     umask 0002 && \
     npm i
+    npm run build:instrumented
+
+# Label to identify this as an instrumented image
+LABEL io.konflux.coverage.instrumented="true" \
+      io.konflux.coverage.provider="istanbul-v8"
 
 RUN node_modules/.bin/cypress install && \
     mkdir -p /tmp/artifacts && \
