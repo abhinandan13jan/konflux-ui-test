@@ -8,6 +8,10 @@ spec:
       type: string
       description: 'The name of the test being executed.'
       default: 'ui-test'
+    - name: default-test-image
+      type: string
+      default: 'quay.io/konflux_ui_qe/konflux-ui-tests:latest'
+      description: 'Default test image to use if no changes detected'
     - name: test-image-repo
       type: string
       description: 'The image to test'
