@@ -37,6 +37,10 @@ spec:
       type: string
       default: 'quay-secret'
       description: 'Secret containing Quay.io credentials'
+    - name: component-image
+      type: string
+      default: ''
+      description: 'component image for the PR'
   results:
     - name: test-image
       description: 'The test image to use for E2E tests'
@@ -104,16 +108,14 @@ spec:
             echo "✅ Quay credentials configured"
           fi
 
-          #--dockerfile=/workspace/source/e2e-tests/Containerfile \
           # Build and push
           /kaniko/executor \
             --context=/workspace/source/e2e-tests \
-            --dockerfile=$(params.container-image) \
+            --dockerfile=$(params.component-image) \
             --destination=$(params.test-image-repo):pr-$(params.pull-request-number) \
             --cache=false \
             --verbosity=info \
             --skip-tls-verify
-
 
           echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)" > $(results.test-image.path)
           echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)"
