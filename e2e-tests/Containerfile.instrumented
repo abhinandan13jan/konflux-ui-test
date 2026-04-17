@@ -14,7 +14,7 @@ RUN chmod -R 775 /tmp/src
 
 RUN cd /tmp/src/ && \
     umask 0002 && \
-    npm i yarn
+    npm i --f yarn
 
 # Install dependencies and build instrumented version
 RUN yarn install
