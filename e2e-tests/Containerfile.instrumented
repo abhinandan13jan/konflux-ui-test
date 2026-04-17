@@ -14,11 +14,10 @@ RUN chmod -R 775 /tmp/src
 
 RUN cd /tmp/src/ && \
     umask 0002 && \
-    npm i --f yarn
+    npm i --f
 
 # Install dependencies and build instrumented version
-RUN yarn install
-RUN yarn build:instrumented
+RUN npm run build:instrumented
 
 RUN cd /tmp/src/e2e-tests && \
     umask 0002 && \
