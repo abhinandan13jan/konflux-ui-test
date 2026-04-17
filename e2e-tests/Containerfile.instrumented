@@ -9,15 +9,15 @@ FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
 
 USER node:0
 
-COPY --chown=node:root --chmod=775 . /tmp/
-RUN chmod -R 775 /tmp/ && \
-    cd /tmp/ && \
+COPY --chown=node:root --chmod=775 . /tmp/src
+RUN chmod -R 775 /tmp/src && \
+    cd /tmp/src/ && \
     ls -la && \
     umask 0002 && \
     npm i --f && \
     npm run build:instrumented
 
-RUN cd /tmp/e2e-tests && \
+RUN cd /tmp/src/e2e-tests && \
     umask 0002 && \
     npm i && \
     node_modules/.bin/cypress install && \
@@ -28,8 +28,8 @@ RUN cd /tmp/e2e-tests && \
 LABEL io.konflux.coverage.instrumented="true" \
       io.konflux.coverage.provider="istanbul-v8"
 
-WORKDIR /tmp/
-COPY --chown=node:root --chmod=775 entrypoint.sh /tmp/
+WORKDIR /tmp/src
+COPY --chown=node:root --chmod=775 entrypoint.sh /tmp/src
 
-ENTRYPOINT ["/tmp/entrypoint.sh"]
+ENTRYPOINT ["/tmp/src/entrypoint.sh"]
 CMD [""]
