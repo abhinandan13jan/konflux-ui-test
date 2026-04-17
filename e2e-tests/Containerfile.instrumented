@@ -12,7 +12,6 @@ USER node:0
 COPY --chown=node:root --chmod=775 . /tmp/src
 RUN chmod -R 775 /tmp/src
 
-RUN npm i yarn
 RUN cd /tmp/src/ && \
     umask 0002 && \
 
