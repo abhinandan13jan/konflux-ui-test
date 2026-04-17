@@ -61,7 +61,7 @@ spec:
       script: |
         #!/bin/sh
         set -eu
-
+        apk add --no-cache git # Install git if not present
         echo "=== Cloning repository and checking for changes ==="
 
         # Clone to /workspace/source
