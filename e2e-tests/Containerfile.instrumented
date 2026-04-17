@@ -12,7 +12,6 @@ FROM node:lts-alpine
 USER node:0
 RUN ls -la
 COPY --chown=node:root --chmod=775 . /tmp/app-root
-COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
 
 # # Copy source files
 # COPY --chown=node:root --chmod=775 @types /tmp/app-root/@types
@@ -32,6 +31,8 @@ RUN cd /tmp/app-root/ && \
     yarn install
 RUN cd /tmp/app-root/ && \
     yarn build:instrumented
+
+COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
 
 RUN cd /tmp/app-root/e2e && \
     umask 0002 && \
