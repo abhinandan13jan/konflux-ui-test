@@ -10,6 +10,8 @@ RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-lin
 USER node:0
 RUN ls -la
 COPY --chown=node:root --chmod=775 . /tmp/src
+COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/src/e2e
+
 # RUN chmod -R 775 /tmp/src && \
 #     cd /tmp/src/ && \
 #     ls -la && \
@@ -32,7 +34,7 @@ LABEL io.konflux.coverage.instrumented="true" \
       io.konflux.coverage.provider="istanbul-v8"
 
 WORKDIR /tmp/src
-COPY --chown=node:root --chmod=775 entrypoint.sh /tmp/src
+COPY --chown=node:root --chmod=775 ./e2e-tests/entrypoint.sh /tmp/src/e2e
 
-ENTRYPOINT ["/tmp/src/entrypoint.sh"]
+ENTRYPOINT ["/tmp/src/e2e/entrypoint.sh"]
 CMD [""]
