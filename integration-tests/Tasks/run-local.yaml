@@ -108,6 +108,11 @@ spec:
 
           echo "=== Building test image with Kaniko ==="
 
+          cd /workspace/source
+          npm i --f
+          yarn -v
+          yarn build:instrumented
+
           # Prepare authentication
           mkdir -p /kaniko/.docker
           if [ -f /secrets/quay/.dockerconfigjson ]; then
