@@ -15,12 +15,9 @@ COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/src/e2e
 RUN chmod -R 775 /tmp/src && \
     cd /tmp/src/ && \
     ls -la && \
-    umask 0002 
-
-FROM registry.access.redhat.com/ubi9/nodejs-20@sha256:938970e0012ddc784adda181ede5bc00a4dfda5e259ee4a57f67973720a565d1 as builder
-
-RUN cd /tmp/src && \
-    npm install yarn
+    umask 0002 && \
+    npm ci && \
+    npm run build:intrumented
 
 # RUN cd /tmp/src/e2e-tests && \
 #     umask 0002 && \
