@@ -8,7 +8,6 @@
 #     chmod +x /usr/local/bin/cosign
 
 FROM node:lts-alpine
-RUN npm install -g yarn
 
 USER node:0
 RUN ls -la
