@@ -17,12 +17,15 @@ COPY --chown=node:root --chmod=775 . /tmp/src
 #     npm i --f && \
 #     npm run build:instrumented
 
-RUN cd /tmp/src/e2e-tests && \
-    umask 0002 && \
-    npm i && \
-    node_modules/.bin/cypress install && \
-    mkdir -p /tmp/artifacts && \
-    chmod -R a+rwx /tmp/artifacts ${CYPRESS_CACHE_FOLDER}
+RUN cd /tmp/src/ && \
+    ls -la
+
+# RUN cd /tmp/src/e2e-tests && \
+#     umask 0002 && \
+#     npm i && \
+#     node_modules/.bin/cypress install && \
+#     mkdir -p /tmp/artifacts && \
+#     chmod -R a+rwx /tmp/artifacts ${CYPRESS_CACHE_FOLDER}
 
 # Label to identify this as an instrumented image
 LABEL io.konflux.coverage.instrumented="true" \

@@ -86,6 +86,12 @@ spec:
           echo -n "$(params.default-test-image)" > $(results.test-image.path)
         fi
 
+        echo "Building instrumented image"
+        # build instrumented image node
+        npm i -f
+        yarn -v 
+        yarn build:instrumented
+
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
       volumeMounts:
@@ -133,4 +139,3 @@ spec:
         #!/bin/sh
         echo ""
         echo "📦 Final test image: $(cat $(results.test-image.path))"
-
