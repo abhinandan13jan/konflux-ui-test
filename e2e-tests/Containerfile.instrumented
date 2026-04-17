@@ -23,7 +23,10 @@ FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
 
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
 
-RUN cd /tmp/app-root/e2e && \
+RUN cd /tmp/app-root/ && \
+    echo "listing" && \
+    ls -la && \
+    cd /e2e/ && \
     umask 0002 && \
     npm i && \
     node_modules/.bin/cypress install && \
