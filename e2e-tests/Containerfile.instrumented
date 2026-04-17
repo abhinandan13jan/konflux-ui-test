@@ -7,6 +7,8 @@
 #     mv cosign-linux-amd64 /usr/local/bin/cosign && \
 #     chmod +x /usr/local/bin/cosign
 
+FROM node:lts-alpine
+
 USER node:0
 COPY --chown=node:root --chmod=775 . /tmp/app-root
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
@@ -16,6 +18,7 @@ RUN cd /tmp/app-root/ && \
     npm i --f
 RUN cd /tmp/app-root/ && \
     npm run build:instrumented
+
 
 # RUN cd /tmp/src/e2e-tests && \
 #     umask 0002 && \
