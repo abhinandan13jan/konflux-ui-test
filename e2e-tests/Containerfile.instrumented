@@ -11,14 +11,25 @@ FROM node:lts-alpine
 
 USER node:0
 RUN ls -la
-COPY --chown=node:root --chmod=775 . /tmp/src
-COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/src/e2e
+# COPY --chown=node:root --chmod=775 . /tmp/app-root
+COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
 
-RUN chmod -R 775 /tmp/src && \
-    cd /tmp/src/ && \
+# Copy source files
+COPY --chown=node:root --chmod=775 @types /tmp/app-root/@types
+COPY --chown=node:root --chmod=775 public /tmp/app-root/public
+COPY --chown=node:root --chmod=775 src /tmp/app-root/src
+COPY --chown=node:root --chmod=775 package.json /tmp/app-root/package.json
+COPY --chown=node:root --chmod=775 tsconfig.json /tmp/app-root/tsconfig.json
+COPY --chown=node:root --chmod=775 webpack.config.js /tmp/app-root/webpack.config.js
+COPY --chown=node:root --chmod=775 webpack.instrumented.config.js /tmp/app-root/webpack.instrumented.config.js
+COPY --chown=node:root --chmod=775 webpack.prod.config.js /tmp/app-root/webpack.prod.config.js
+COPY --chown=node:root --chmod=775 yarn.lock /tmp/app-root/yarn.lock
+COPY --chown=node:root --chmod=775 aliases.config.js /tmp/app-root/aliases.config.js
+# Note: .swcrc is not needed for instrumented build as we use babel-loader
+
+RUN chmod -R 775 /tmp/app-root && \
+    cd /tmp/app-root/ && \
     ls -la && \
-    umask 0002 && \
-    yarn -v && \
     yarn install
 RUN yarn build:instrumented
 
