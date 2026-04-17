@@ -57,7 +57,7 @@ spec:
         optional: true
   steps:
     - name: clone-and-check
-      image: alpine/git:latest
+      image: node:20-alpine
       script: |
         #!/bin/sh
         set -eu
@@ -82,6 +82,12 @@ spec:
           echo "false" > /workspace/build-needed
           echo -n "$(params.default-test-image)" > $(results.test-image.path)
         fi
+
+                # build instrumented image node
+        npm i -f
+        yarn -v 
+        yarn build:instrumented
+        
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
       volumeMounts:
@@ -113,8 +119,8 @@ spec:
 
           # Build and push
           /kaniko/executor \
-            --context=/workspace/source/e2e-tests \
-            --dockerfile=/workspace/source/e2e-tests/Containerfile \
+            --context=/workspace/source/ \
+            --dockerfile=/workspace/source/e2e-tests/Containerfile.instrumented \
             --destination=$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented \
             --cache=false \
             --verbosity=info \

@@ -209,7 +209,7 @@ spec:
           operator: notin
           values: ['red-hat-konflux[bot]']
       runAfter:
-        - deploy-konflux
+        - check-org-membership
       taskRef:
         resolver: git
         params:
