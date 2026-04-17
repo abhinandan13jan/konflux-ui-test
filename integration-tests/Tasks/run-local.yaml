@@ -88,8 +88,10 @@ spec:
 
         echo "Building instrumented image"
         # build instrumented image node
-        npm i -f
-        npm run build:instrumented
+        npm i -f yarn
+        yarn -v
+        yarn install
+        yarn build:instrumented
 
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
