@@ -58,15 +58,15 @@ spec:
       secret:
         secretName: $(params.quay-secret)
         optional: true
-  resources:
-    limits:
-      memory: "8Gi" # Ensure this is higher than max-old-space-size
-      cpu: "2000m"
-      requests:
-        memory: "4Gi"
-        cpu: "1000m"
   steps:
     - name: clone-and-check
+      resources:
+        limits:
+          memory: "8Gi" # Ensure this is higher than max-old-space-size
+          cpu: "2000m"
+        requests:
+          memory: "4Gi"
+          cpu: "1000m"
       env:
         - name: NODE_OPTIONS
           value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
@@ -82,6 +82,7 @@ spec:
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
         cd /workspace/source
+         echo "=== Installing node ==="
         npm i --f
         npm run build:instrumented
         git checkout $(params.git-revision)
@@ -100,6 +101,13 @@ spec:
 
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
+      resources:
+        limits:
+          memory: "8Gi" # Ensure this is higher than max-old-space-size
+          cpu: "2000m"
+        requests:
+          memory: "4Gi"
+          cpu: "1000m"
       env:
         - name: NODE_OPTIONS
           value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
