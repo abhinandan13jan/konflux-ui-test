@@ -17,9 +17,13 @@ RUN cd /tmp/src/ && \
     npm i --f
 
 # Install dependencies and build instrumented version
-RUN npm run build:instrumented
+RUN echo "listing ./"
+RUN cd ../
+RUN ls -la
 
-RUN cd /tmp/src/e2e-tests && \
+# RUN npm run build:instrumented
+
+RUN cd /src/e2e-tests && \
     umask 0002 && \
     npm i && \
     node_modules/.bin/cypress install && \
