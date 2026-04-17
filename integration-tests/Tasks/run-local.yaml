@@ -60,7 +60,7 @@ spec:
         optional: true
   steps:
     - name: clone-and-check
-      image: alpine/git:latest
+      image: node:20-alpine
       script: |
         #!/bin/sh
         set -eu
