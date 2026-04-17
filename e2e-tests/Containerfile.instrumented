@@ -21,14 +21,17 @@ RUN cd /tmp/app-root/ && \
 
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
 
+WORKDIR /tmp/app-root
 RUN echo "listing" && \
     ls -la && \
-    cd /tmp/app-root/e2e/ && \
-    umask 0002 && \
-    npm i && \
-    node_modules/.bin/cypress install && \
-    mkdir -p /tmp/app-root/e2e/artifacts && \
-    chmod -R a+rwx /tmp/app-root/e2e/artifacts ${CYPRESS_CACHE_FOLDER}
+    cd /tmp/ && \
+    ls -la
+    # cd /tmp/app-root/e2e/ && \
+    # umask 0002 && \
+    # npm i && \
+    # node_modules/.bin/cypress install && \
+    # mkdir -p /tmp/app-root/e2e/artifacts && \
+    # chmod -R a+rwx /tmp/app-root/e2e/artifacts ${CYPRESS_CACHE_FOLDER}
 
 # Label to identify this as an instrumented image
 LABEL io.konflux.coverage.instrumented="true" \
