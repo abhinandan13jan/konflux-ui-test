@@ -13,7 +13,8 @@ COPY --chown=node:root --chmod=775 . /tmp/src
 RUN chmod -R 775 /tmp/src
 
 RUN cd /tmp/src/ && \
-    umask 0002
+    umask 0002 && \
+    npm i yarn
 
 # Install dependencies and build instrumented version
 RUN yarn install
