@@ -60,11 +60,11 @@ spec:
         optional: true
   steps:
     - name: clone-and-check
-      image: node:20-alpine
+      image: alpine/git:latest
       script: |
         #!/bin/sh
         set -eu
-        apk add --no-cache git # Install git if not present
+
         echo "=== Cloning repository and checking for changes ==="
 
         # Clone to /workspace/source
@@ -85,13 +85,6 @@ spec:
           echo "false" > /workspace/build-needed
           echo -n "$(params.default-test-image)" > $(results.test-image.path)
         fi
-
-        echo "Building instrumented image"
-        # build instrumented image node
-        npm i -f yarn
-        yarn -v
-        yarn install
-        yarn build:instrumented
 
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
@@ -140,3 +133,4 @@ spec:
         #!/bin/sh
         echo ""
         echo "📦 Final test image: $(cat $(results.test-image.path))"
+
