@@ -84,7 +84,7 @@ spec:
         cd /workspace/source
          echo "=== Installing node ==="
         npm i --f
-        npm run build:instrumented
+        npm run build:instrumented --f
         git checkout $(params.git-revision)
 
         # Check if e2e-tests directory has changes compared to target branch
