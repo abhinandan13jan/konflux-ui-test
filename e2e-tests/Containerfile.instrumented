@@ -1,13 +1,11 @@
-# FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
+FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
 
-# RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-#     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-# RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-linux-amd64" && \
-#     mv cosign-linux-amd64 /usr/local/bin/cosign && \
-#     chmod +x /usr/local/bin/cosign
-
-FROM node:lts-alpine
+RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-linux-amd64" && \
+    mv cosign-linux-amd64 /usr/local/bin/cosign && \
+    chmod +x /usr/local/bin/cosign
 
 USER node:0
 COPY --chown=node:root --chmod=775 . /tmp/app-root
@@ -16,16 +14,15 @@ COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
 RUN cd /tmp/app-root/ && \
     ls -la && \
     npm i --f
-RUN cd /tmp/app-root/ && \
-    npm run build:instrumented
+# RUN cd /tmp/app-root/ && \
+#     npm run build:instrumented
 
-
-# RUN cd /tmp/src/e2e-tests && \
-#     umask 0002 && \
-#     npm i && \
-#     node_modules/.bin/cypress install && \
-#     mkdir -p /tmp/artifacts && \
-#     chmod -R a+rwx /tmp/artifacts ${CYPRESS_CACHE_FOLDER}
+RUN cd /tmp/src/e2e-tests && \
+    umask 0002 && \
+    npm i && \
+    node_modules/.bin/cypress install && \
+    mkdir -p /tmp/artifacts && \
+    chmod -R a+rwx /tmp/artifacts ${CYPRESS_CACHE_FOLDER}
 
 # Label to identify this as an instrumented image
 LABEL io.konflux.coverage.instrumented="true" \

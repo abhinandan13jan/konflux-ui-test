@@ -58,13 +58,23 @@ spec:
       secret:
         secretName: $(params.quay-secret)
         optional: true
+  resources:
+    limits:
+      memory: "8Gi" # Ensure this is higher than max-old-space-size
+      cpu: "2000m"
+      requests:
+        memory: "4Gi"
+        cpu: "1000m"
   steps:
     - name: clone-and-check
-      image: alpine/git:latest
+      env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
+      image: node:lts-alpine
       script: |
         #!/bin/sh
         set -eu
-
+        apk add --no-cache git
         echo "=== Cloning repository and checking for changes ==="
 
         # Clone to /workspace/source
@@ -72,6 +82,8 @@ spec:
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
         cd /workspace/source
+        npm i --f
+        npm run build:instrumented
         git checkout $(params.git-revision)
 
         # Check if e2e-tests directory has changes compared to target branch
@@ -88,6 +100,9 @@ spec:
 
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
+      env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
       volumeMounts:
         - name: quay-auth
           mountPath: /secrets/quay
