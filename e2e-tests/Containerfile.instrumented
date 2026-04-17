@@ -10,15 +10,13 @@ RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-lin
 USER node:0
 
 COPY --chown=node:root --chmod=775 . /tmp/src
-RUN chmod -R 775 /tmp/src
-
-RUN cd /tmp/src/ && \
+RUN chmod -R 775 /tmp/src && \
+    cd /tmp/src/ && \
     umask 0002 && \
     npm i --f
 
 # Install dependencies and build instrumented version
 RUN echo "listing ./"
-RUN cd ../
 RUN ls -la
 
 # RUN npm run build:instrumented
