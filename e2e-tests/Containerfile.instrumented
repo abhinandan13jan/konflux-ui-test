@@ -8,7 +8,7 @@ RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-lin
     chmod +x /usr/local/bin/cosign
 
 USER node:0
-
+RUN ls -la
 COPY --chown=node:root --chmod=775 . /tmp/src
 # RUN chmod -R 775 /tmp/src && \
 #     cd /tmp/src/ && \
