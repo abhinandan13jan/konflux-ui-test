@@ -11,7 +11,7 @@ FROM node:lts-alpine
 
 USER node:0
 RUN ls -la
-# COPY --chown=node:root --chmod=775 . /tmp/app-root
+COPY --chown=node:root --chmod=775 . /tmp/app-root
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
 
 # Copy source files
@@ -27,11 +27,11 @@ COPY --chown=node:root --chmod=775 yarn.lock /tmp/app-root/yarn.lock
 COPY --chown=node:root --chmod=775 aliases.config.js /tmp/app-root/aliases.config.js
 # Note: .swcrc is not needed for instrumented build as we use babel-loader
 
-RUN chmod -R 775 /tmp/app-root && \
-    cd /tmp/app-root/ && \
+RUN cd /tmp/app-root/ && \
     ls -la && \
     yarn install
-RUN yarn build:instrumented
+RUN cd /tmp/app-root/ && \
+    yarn build:instrumented
 
 # RUN cd /tmp/src/e2e-tests && \
 #     umask 0002 && \
