@@ -12,15 +12,12 @@ USER node:0
 COPY --chown=node:root --chmod=775 . /tmp/src
 RUN chmod -R 775 /tmp/src
 
-COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/src/e2e
-RUN chmod -R 775 /tmp/src/e2e
-
 RUN cd /tmp/src/ && \
     umask 0002 && \
     npm i && \
     npm run build:instrumented
 
-RUN cd /tmp/src/e2e && \
+RUN cd /tmp/src/e2e-tests && \
     umask 0002 && \
     npm i && \
     node_modules/.bin/cypress install && \
