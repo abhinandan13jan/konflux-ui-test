@@ -82,10 +82,11 @@ spec:
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
         cd /workspace/source
-         echo "=== Installing node ==="
-        npm i --f
-        npm run build:instrumented --f
         git checkout $(params.git-revision)
+        echo "=== Installing node ==="
+        git stash --all
+        yarn install
+        yarn build:instrumented
 
         # Check if e2e-tests directory has changes compared to target branch
         git fetch origin $(params.target-branch)
