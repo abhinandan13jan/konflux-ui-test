@@ -20,6 +20,7 @@ RUN chmod -R 775 /tmp/src && \
     umask 0002 && \
     yarn -v && \
     yarn install
+RUN yarn build:instrumented
 
 # RUN cd /tmp/src/e2e-tests && \
 #     umask 0002 && \
