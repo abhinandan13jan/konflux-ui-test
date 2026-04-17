@@ -16,7 +16,8 @@ RUN chmod -R 775 /tmp/src && \
     cd /tmp/src/ && \
     ls -la && \
     umask 0002 && \
-    npm i yarn && 
+    npm i yarn && \
+    yarn -v
 
 # RUN cd /tmp/src/e2e-tests && \
 #     umask 0002 && \
