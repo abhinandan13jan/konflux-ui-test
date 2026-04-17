@@ -106,12 +106,6 @@ spec:
             exit 0
           fi
 
-          echo "=== Preparing NPM dependencies ==="
-          cd /workspace/source
-          npm i --f
-          yarn -v
-          yarn build:instrumented
-
           echo "=== Building test image with Kaniko ==="
 
           # Prepare authentication

@@ -9,20 +9,15 @@ FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
 
 USER node:0
 
-COPY --chown=node:root --chmod=775 . /tmp/src
-RUN chmod -R 775 /tmp/src && \
-    cd /tmp/src/ && \
+COPY --chown=node:root --chmod=775 . /tmp/
+RUN chmod -R 775 /tmp/ && \
+    cd /tmp/ && \
     ls -la && \
     umask 0002 && \
-    npm i --f
+    npm i --f && \
+    npm run build:instrumented
 
-# Install dependencies and build instrumented version
-RUN echo "listing ./"
-RUN ls -la
-
-# RUN npm run build:instrumented
-
-RUN cd /tmp/src/e2e-tests && \
+RUN cd /tmp/e2e-tests && \
     umask 0002 && \
     npm i && \
     node_modules/.bin/cypress install && \
