@@ -12,12 +12,12 @@ RUN ls -la
 COPY --chown=node:root --chmod=775 . /tmp/src
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/src/e2e
 
-# RUN chmod -R 775 /tmp/src && \
-#     cd /tmp/src/ && \
-#     ls -la && \
-#     umask 0002 && \
-#     npm i --f && \
-#     npm run build:instrumented
+RUN chmod -R 775 /tmp/src && \
+    cd /tmp/src/ && \
+    ls -la && \
+    umask 0002 && \
+    npm i --f && \
+    npm run build:instrumented --f
 
 RUN cd /tmp/src/ && \
     ls -la
