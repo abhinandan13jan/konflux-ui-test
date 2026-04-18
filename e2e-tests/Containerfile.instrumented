@@ -9,19 +9,21 @@
 
 FROM node:lts-alpine
 
+WORKDIR /tmp/
+
 USER node:0
 RUN ls -la
-COPY --chown=node:root --chmod=775 . /tmp/app-root
+# COPY --chown=node:root --chmod=775 . /tmp/
 
-RUN cd /tmp/app-root/ && \
+RUN cd /tmp/ && \
     ls -la && \
     yarn install
-RUN cd /tmp/app-root/ && \
+RUN cd /tmp/ && \
     yarn build:instrumented
 
-COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/app-root/e2e
+COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/e2e
 
-WORKDIR /tmp/app-root
+WORKDIR /tmp/
 RUN echo "listing" && \
     ls -la && \
     cd /tmp/ && \
@@ -37,8 +39,8 @@ RUN echo "listing" && \
 LABEL io.konflux.coverage.instrumented="true" \
       io.konflux.coverage.provider="istanbul-v8"
 
-WORKDIR /tmp/app-root
-COPY --chown=node:root --chmod=775 ./e2e-tests/entrypoint.sh /tmp/app-root/e2e
+WORKDIR /tmp/
+COPY --chown=node:root --chmod=775 ./e2e-tests/entrypoint.sh /tmp/
 
-ENTRYPOINT ["/tmp/app-root/e2e/entrypoint.sh"]
+ENTRYPOINT ["/tmp/entrypoint.sh"]
 CMD [""]
