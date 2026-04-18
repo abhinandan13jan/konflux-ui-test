@@ -9,9 +9,9 @@ FROM node:lts-alpine
 
 USER node:0
 
-COPY --chown=node:root --chmod=775 ./e2e-tests/ /tmp/e2e
-RUN chmod -R 775 /tmp/e2e
+COPY --chown=node:root --chmod=775 e2e-tests/ /tmp/e2e
 RUN ls -la /tmp/
+RUN chmod -R 775 /tmp/e2e
 
 # RUN cd /tmp/e2e && \
 #     umask 0002 && \
