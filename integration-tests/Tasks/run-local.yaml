@@ -88,11 +88,10 @@ spec:
         cd ../
         yarn install
         yarn run build:instrumented
+        cp dist/ src/
+        cd src 
+        echo "src after copy"
         ls -la
-        # cp dist/ src/
-        # cd src 
-        # echo "src after copy"
-        # ls -la
 
     # - name: build-with-kaniko
     #   image: gcr.io/kaniko-project/executor:debug
