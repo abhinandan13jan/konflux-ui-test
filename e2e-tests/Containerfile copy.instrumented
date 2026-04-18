@@ -1,4 +1,4 @@
-FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
+# FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
 
 # RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
 #     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
@@ -7,20 +7,55 @@ FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
 #     mv cosign-linux-amd64 /usr/local/bin/cosign && \
 #     chmod +x /usr/local/bin/cosign
 
-USER node:0
+FROM node:lts-alpine
 
-COPY --chown=node:root --chmod=775 ./e2e-tests/ /tmp/e2e
+# WORKDIR /tmp/
+
+RUN echo "before copy ." && \
+    cd /tmp/ && \
+    ls -la
+
+USER node:root
+COPY --chown=node:root --chmod=775 . /tmp/
+
+# RUN echo "after copy ." && \
+#     cd /tmp/ && \
+#     ls -la
+
+# RUN cd /tmp/ && \
+#     ls -la && \
+#     yarn install
+# RUN cd /tmp/ && \
+#     yarn build:instrumented
+
+RUN echo "before copy e2e" && \
+    cd /tmp/ && \
+    ls -la
+    
+COPY --chown=node:root --chmod=775 /e2e-tests /tmp/e2e
 RUN chmod -R 775 /tmp/e2e
 
-RUN cd /tmp/e2e && \
-    umask 0002 && \
-    npm i && \
-    node_modules/.bin/cypress install && \
-    mkdir -p /tmp/artifacts && \
-    chmod -R a+rwx /tmp/artifacts ${CYPRESS_CACHE_FOLDER}
+RUN echo "after copy e2e" && \
+    cd /tmp/ && \
+    ls -la
+
+RUN echo "list" && \
+    cd /tmp && \
+    ls -la
+
+# RUN cd /tmp/e2e/ && \
+#     umask 0002 && \
+#     npm i && \
+#     node_modules/.bin/cypress install && \
+#     mkdir -p /tmp/app-root/e2e/artifacts && \
+#     chmod -R a+rwx /tmp/app-root/e2e/artifacts ${CYPRESS_CACHE_FOLDER}
+
+# Label to identify this as an instrumented image
+LABEL io.konflux.coverage.instrumented="true" \
+      io.konflux.coverage.provider="istanbul-v8"
 
 WORKDIR /tmp/
-COPY --chown=node:root --chmod=775 entrypoint.sh /tmp/
+COPY --chown=node:root --chmod=775 ./e2e-tests/entrypoint.sh /tmp/
 
 ENTRYPOINT ["/tmp/entrypoint.sh"]
 CMD [""]
