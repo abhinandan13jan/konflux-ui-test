@@ -18,15 +18,15 @@ RUN echo "before copy ." && \
 USER node:root
 COPY --chown=node:root --chmod=775 . /tmp/
 
-RUN echo "after copy ." && \
-    cd /tmp/ && \
-    ls -la
+# RUN echo "after copy ." && \
+#     cd /tmp/ && \
+#     ls -la
 
-RUN cd /tmp/ && \
-    ls -la && \
-    yarn install
-RUN cd /tmp/ && \
-    yarn build:instrumented
+# RUN cd /tmp/ && \
+#     ls -la && \
+#     yarn install
+# RUN cd /tmp/ && \
+#     yarn build:instrumented
 
 RUN echo "before copy e2e" && \
     cd /tmp/ && \
