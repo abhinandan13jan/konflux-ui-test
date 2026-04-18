@@ -21,7 +21,7 @@ RUN chmod -R 775 /tmp/e2e
 #     chmod -R a+rwx /tmp/artifacts ${CYPRESS_CACHE_FOLDER}
 
 WORKDIR /tmp/
-COPY --chown=node:root --chmod=775 entrypoint.sh /tmp/
+COPY --chown=node:root --chmod=775 e2e-tests/entrypoint.sh /tmp/
 
 ENTRYPOINT ["/tmp/entrypoint.sh"]
 CMD [""]
