@@ -9,7 +9,7 @@
 
 FROM node:lts-alpine
 
-WORKDIR /tmp/
+# WORKDIR /tmp/
 
 RUN echo "before copy ." && \
     cd /tmp/ && \
