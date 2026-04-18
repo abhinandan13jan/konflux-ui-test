@@ -32,7 +32,7 @@ RUN echo "before copy e2e" && \
     cd /tmp/ && \
     ls -la
     
-COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/e2e
+COPY --chown=node:root --chmod=775 /e2e-tests /tmp/e2e
 RUN chmod -R 775 /tmp/e2e
 
 RUN echo "after copy e2e" && \
