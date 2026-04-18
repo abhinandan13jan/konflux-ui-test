@@ -82,14 +82,14 @@ spec:
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
         cd /workspace/source
-        ls -la
+        cd src
         echo "src before copy"
         ls -la
         cd ../
         yarn install
         yarn run build:instrumented
         ls -la
-        # cp /dist/ /src/
+        # cp dist/ src/
         # cd src 
         # echo "src after copy"
         # ls -la
