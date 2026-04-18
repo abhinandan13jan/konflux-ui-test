@@ -13,7 +13,7 @@ WORKDIR /tmp/
 
 USER node:0
 RUN ls -la
-# COPY --chown=node:root --chmod=775 . /tmp/
+COPY --chown=node:root --chmod=775 . /tmp/
 
 RUN cd /tmp/ && \
     ls -la && \
