@@ -82,7 +82,7 @@ spec:
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
         cd /workspace/source
-        cd /src
+        ls -la
         echo "src before copy"
         ls -la
         cd ../
