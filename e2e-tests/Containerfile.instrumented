@@ -10,9 +10,16 @@ FROM node:lts-alpine
 USER node:0
 
 COPY --chown=node:root --chmod=775 . /tmp/
+
+RUN cd /tmp/ && \
+    ls -la && \
+    yarn install
+RUN cd /tmp/ && \
+    yarn build:instrumented
+
 RUN ls -la &&\
     ls -la /tmp/
-# RUN chmod -R 775 /tmp/e2e
+
 
 # RUN cd /tmp/e2e && \
 #     umask 0002 && \
