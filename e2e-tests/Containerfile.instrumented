@@ -1,6 +1,6 @@
 FROM node:lts-alpine
 
-WORKDIR /tmp/
+# WORKDIR /tmp/
 
 USER node:0
 RUN ls -la
@@ -23,12 +23,16 @@ RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-lin
     
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/e2e
 
-RUN cd /tmp/e2e/ && \
-    umask 0002 && \
-    npm i && \
-    node_modules/.bin/cypress install && \
-    mkdir -p /tmp/app-root/e2e/artifacts && \
-    chmod -R a+rwx /tmp/app-root/e2e/artifacts ${CYPRESS_CACHE_FOLDER}
+RUN echo "list" && \
+    cd /tmp && \
+    ls -la
+
+# RUN cd /tmp/e2e/ && \
+#     umask 0002 && \
+#     npm i && \
+#     node_modules/.bin/cypress install && \
+#     mkdir -p /tmp/app-root/e2e/artifacts && \
+#     chmod -R a+rwx /tmp/app-root/e2e/artifacts ${CYPRESS_CACHE_FOLDER}
 
 # Label to identify this as an instrumented image
 LABEL io.konflux.coverage.instrumented="true" \
