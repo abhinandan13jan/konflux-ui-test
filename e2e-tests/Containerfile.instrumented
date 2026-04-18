@@ -11,14 +11,14 @@ FROM node:lts-alpine
 
 WORKDIR /tmp/
 
-RUN echo "before copy ."
+RUN echo "before copy ." && \
     cd /tmp/ && \
     ls -la
 
 USER node:root
 COPY --chown=node:root --chmod=775 . /tmp/
 
-RUN echo "after copy ."
+RUN echo "after copy ." && \
     cd /tmp/ && \
     ls -la
 
@@ -28,13 +28,13 @@ RUN cd /tmp/ && \
 RUN cd /tmp/ && \
     yarn build:instrumented
 
-RUN echo "before copy e2e"
+RUN echo "before copy e2e" && \
     cd /tmp/ && \
     ls -la
     
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/e2e
 
-RUN echo "after copy e2e"
+RUN echo "after copy e2e" && \
     cd /tmp/ && \
     ls -la
 
