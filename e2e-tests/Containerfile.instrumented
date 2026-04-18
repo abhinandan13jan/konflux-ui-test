@@ -21,10 +21,11 @@ RUN cd /tmp/ && \
 RUN cd /tmp/ && \
     yarn build:instrumented
 
+    
 WORKDIR /tmp/
 COPY --chown=node:root --chmod=775 ./e2e-tests /tmp/e2e
 
-RUN cd /tmp/e2e/ && \
+RUN cd /e2e/ && \
     umask 0002 && \
     npm i && \
     node_modules/.bin/cypress install && \
