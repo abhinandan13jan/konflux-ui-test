@@ -101,11 +101,11 @@ spec:
         mkdir -p ../artifacts
         chmod -R a+rwx ../artifacts ${CYPRESS_CACHE_FOLDER}
 
-        rm .dockerignore
-        cp .dockerignore.instrumented .dockerignore
+        rm /workspace/source/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented /workspace/source/.dockerignore
 
         rm e2e-tests/dockerignore
-        cp .dockerignore.instrumented.cypress /e2e-tests/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented.cypress /workspace/source//e2e-tests/.dockerignore
 
 
         echo "listing host"
