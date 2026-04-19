@@ -7,12 +7,10 @@
 #     mv cosign-linux-amd64 /usr/local/bin/cosign && \
 #     chmod +x /usr/local/bin/cosign
 
-FROM registry.access.redhat.com/ubi9/nodejs-20@sha256:938970e0012ddc784adda181ede5bc00a4dfda5e259ee4a57f67973720a565d1 as builder
-WORKDIR  /opt/app-root/src
-RUN npm install yarn --global
+FROM node:lts-alpine
+WORKDIR /tmp/
 
-# USER node:0
-
+USER node:root
 COPY --chown=node:root --chmod=775 . /tmp/
 COPY --chown=node:root --chmod=775 e2e-tests /tmp/e2e
 
