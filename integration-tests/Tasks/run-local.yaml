@@ -100,13 +100,11 @@ spec:
         echo "e2e listing"
         ls -la /workspace/source/e2e-tests
 
-        cd /workspace/source/artifacts
         echo "artifacts listing"
-        ls -la
+        ls -la /workspace/source/artifacts
 
-        cd /workspace/source/cypress
         echo "cypress listing"
-        ls -la
+        ls -la /workspace/source/cypress
 
         rm /workspace/source/.dockerignore
         cp /workspace/source/.dockerignore.instrumented /workspace/source/.dockerignore
