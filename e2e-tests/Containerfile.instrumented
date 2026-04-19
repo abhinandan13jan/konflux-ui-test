@@ -8,12 +8,13 @@
 #     chmod +x /usr/local/bin/cosign
 
 FROM node:lts-alpine
-WORKDIR /tmp/
+# WORKDIR /tmp/
 
-USER node:root
+USER node:0
 COPY --chown=node:root --chmod=775 . /tmp/
 COPY --chown=node:root --chmod=775 e2e-tests /tmp/e2e
 
+RUN ls -la
 RUN ls -la tmp
 
 # RUN cd tmp/e2e-tests && \
