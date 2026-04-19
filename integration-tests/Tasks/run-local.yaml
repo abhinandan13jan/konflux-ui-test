@@ -73,6 +73,7 @@ spec:
       image: node:lts-alpine
       script: |
         #!/bin/sh
+        export CYPRESS_CACHE_FOLDER=//workspace/source/cypress
         set -eu
         apk add --no-cache git
         echo "=== Cloning repository and intrument build ==="
@@ -81,13 +82,16 @@ spec:
         git clone $(params.git-url) /workspace/source
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
+        cp /workspace/dummy/dockerfile.instrumented /workspace/source/dockerfile.instrumented
+        cp /workspace/dummy/dockerfile.instrumented.cypress /workspace/source/dockerfile.instrumented.cypress
         cd /workspace/source
+
         echo "src before instrument"
         ls -la
         yarn install
         yarn run build:instrumented
         cp /workspace/source/dist/* /workspace/source/src/
-        
+
         echo "src after instrument"
         ls -la
         cd /workspace/source/e2e-tests
@@ -97,59 +101,68 @@ spec:
         mkdir -p ../artifacts
         chmod -R a+rwx ../artifacts ${CYPRESS_CACHE_FOLDER}
 
+        rm .dockerignore
+        cp .dockerignore.instrumented .dockerignore
+
+        rm e2e-tests/dockerignore
+        cp .dockerignore.instrumented.cypress /e2e-tests/.dockerignore
+
+
         echo "listing host"
         ls -la /workspace/source
+        ls -la /workspace/source/artifacts
+        ls -la /workspace/source/cypress
 
-    - name: build-with-kaniko
-      image: gcr.io/kaniko-project/executor:debug
-      resources:
-        limits:
-          memory: "8Gi" # Ensure this is higher than max-old-space-size
-          cpu: "2000m"
-        requests:
-          memory: "4Gi"
-          cpu: "1000m"
-      env:
-        - name: NODE_OPTIONS
-          value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
-      volumeMounts:
-        - name: quay-auth
-          mountPath: /secrets/quay
-          readOnly: true
-      command:
-        - /bin/sh
-      args:
-        - -c
-        - |
-          #BUILD_NEEDED=$(cat /workspace/build-needed)
-          BUILD_NEEDED="true"
+    # - name: build-with-kaniko
+    #   image: gcr.io/kaniko-project/executor:debug
+    #   resources:
+    #     limits:
+    #       memory: "8Gi" # Ensure this is higher than max-old-space-size
+    #       cpu: "2000m"
+    #     requests:
+    #       memory: "4Gi"
+    #       cpu: "1000m"
+    #   env:
+    #     - name: NODE_OPTIONS
+    #       value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
+    #   volumeMounts:
+    #     - name: quay-auth
+    #       mountPath: /secrets/quay
+    #       readOnly: true
+    #   command:
+    #     - /bin/sh
+    #   args:
+    #     - -c
+    #     - |
+    #       #BUILD_NEEDED=$(cat /workspace/build-needed)
+    #       BUILD_NEEDED="true"
 
-          if [ "$BUILD_NEEDED" = "false" ]; then
-            echo "⏭️  Skipping build (no changes in e2e-tests/)"
-            echo "    Using default image: $(params.default-test-image)"
-            exit 0
-          fi
+    #       if [ "$BUILD_NEEDED" = "false" ]; then
+    #         echo "⏭️  Skipping build (no changes in e2e-tests/)"
+    #         echo "    Using default image: $(params.default-test-image)"
+    #         exit 0
+    #       fi
 
-          echo "=== Building test image with Kaniko ==="
+    #       echo "=== Building test image with Kaniko ==="
 
-          # Prepare authentication
-          mkdir -p /kaniko/.docker
-          if [ -f /secrets/quay/.dockerconfigjson ]; then
-            cp /secrets/quay/.dockerconfigjson /kaniko/.docker/config.json
-            echo "✅ Quay credentials configured"
-          fi
+    #       # Prepare authentication
+    #       mkdir -p /kaniko/.docker
+    #       if [ -f /secrets/quay/.dockerconfigjson ]; then
+    #         cp /secrets/quay/.dockerconfigjson /kaniko/.docker/config.json
+    #         echo "✅ Quay credentials configured"
+    #       fi
 
-          # Build and push
-          /kaniko/executor \
-            --context=/workspace/source/ \
-            --dockerfile=/workspace/source/e2e-tests/Containerfile.instrumented \
-            --destination=$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented \
-            --cache=false \
-            --verbosity=info \
-            --skip-tls-verify
+    #       # Build and push
+    #       /kaniko/executor \
+    #         --context=/workspace/source/ \
+    #         --dockerfile=/workspace/source/e2e-tests/Containerfile.instrumented \
+    #         --destination=$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented \
+    #         --cache=false \
+    #         --verbosity=info \
+    #         --skip-tls-verify
 
-          echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented" > $(results.test-image.path)
-          echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)--instrumented"
+    #       echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented" > $(results.test-image.path)
+    #       echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)--instrumented"
 
     - name: show-result
       image: alpine:latest
