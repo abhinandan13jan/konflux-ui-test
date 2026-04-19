@@ -128,11 +128,6 @@ spec:
             cp /secrets/quay/.dockerconfigjson /kaniko/.docker/config.json
             echo "✅ Quay credentials configured"
           fi
-          
-          echo "Listing source"
-          cd /workspace/source/
-          ls -la
-          cd ../../
 
           # Build and push
           /kaniko/executor \

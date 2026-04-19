@@ -1,4 +1,4 @@
-
+FROM quay.io/konflux_ui_qe/konflux-ui-tests-base:5.8.0
 
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
@@ -10,16 +10,6 @@ RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-lin
 USER node:0
 
 COPY --chown=node:root --chmod=775 . /tmp/
-
-# RUN cd /tmp/ && \
-#     ls -la && \
-#     yarn install
-# RUN cd /tmp/ && \
-#     yarn build:instrumented
-
-# RUN ls -la &&\
-#     ls -la /tmp/
-
 
 RUN cd /tmp/e2e-tests && \
     umask 0002 && \
