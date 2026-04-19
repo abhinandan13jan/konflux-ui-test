@@ -88,9 +88,8 @@ spec:
         cd ../
         yarn install
         yarn run build:instrumented
-        ls -la
-        # cp /workspace/source/dist/ /workspace/source/src/
-        # cd src 
+        cp /workspace/source/dist/* /workspace/source/src/
+        cd src 
         echo "src after copy"
         ls -la
 
