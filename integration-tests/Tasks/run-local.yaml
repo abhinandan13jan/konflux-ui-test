@@ -129,6 +129,10 @@ spec:
             echo "✅ Quay credentials configured"
           fi
 
+          echo "listing host"
+          ls -la /workspace/source
+          ls -la /work
+
           # Build and push
           /kaniko/executor \
             --context=/workspace/source/ \
