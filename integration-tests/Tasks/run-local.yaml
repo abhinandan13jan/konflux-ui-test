@@ -87,14 +87,15 @@ spec:
         yarn install
         yarn run build:instrumented
         cp /workspace/source/dist/* /workspace/source/src/
+        
         echo "src after instrument"
         ls -la
-        # cd /workspace/source/e2e-tests
-        # umask 0002
-        # npm i
-        # node_modules/.bin/cypress install
-        # mkdir -p ../artifacts
-        # chmod -R a+rwx ../artifacts ${CYPRESS_CACHE_FOLDER}
+        cd /workspace/source/e2e-tests
+        umask 0002
+        npm i
+        node_modules/.bin/cypress install
+        mkdir -p ../artifacts
+        chmod -R a+rwx ../artifacts ${CYPRESS_CACHE_FOLDER}
 
         echo "listing host"
         ls -la /workspace/source
