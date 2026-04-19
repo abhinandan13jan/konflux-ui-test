@@ -55,41 +55,69 @@ spec:
       secret:
         secretName: $(params.quay-secret)
         optional: true
-  steps:
+steps:
     - name: clone-and-check
-      image: node:20-alpine
+      resources:
+        limits:
+          memory: "8Gi" # Ensure this is higher than max-old-space-size
+          cpu: "2000m"
+        requests:
+          memory: "4Gi"
+          cpu: "1000m"
+      env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
+      image: node:lts-alpine
       script: |
         #!/bin/sh
+        export CYPRESS_CACHE_FOLDER=//workspace/source/cypress
         set -eu
-        apk add --no-cache git # Install git if not present
-        echo "=== Cloning repository and checking for changes ==="
+        apk add --no-cache git
+        echo "=== Cloning repository and intrument build ==="
 
         # Clone to /workspace/source
         git clone $(params.git-url) /workspace/source
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
+        cp /workspace/dummy/.dockerignore.instrumented /workspace/source/.dockerignore.instrumented
+        cp /workspace/dummy/.dockerignore.instrumented.cypress /workspace/source/.dockerignore.instrumented.cypress
         cd /workspace/source
-        git checkout $(params.git-revision)
 
-        # Check if e2e-tests directory has changes compared to target branch
-        git fetch origin $(params.target-branch)
+        yarn install
+        yarn run build:instrumented
+        cp /workspace/source/dist/* /workspace/source/src/
 
-        if git diff --name-only origin/$(params.target-branch)...HEAD | grep -q "^e2e-tests/"; then
-          echo "✅ Changes detected in e2e-tests/"
-          echo "true" > /workspace/build-needed
-        else
-          echo "ℹ️  No changes in e2e-tests/"
-          echo "false" > /workspace/build-needed
-          echo -n "$(params.default-test-image)" > $(results.test-image.path)
-        fi
+        cd /workspace/source/e2e-tests
+        umask 0002
+        npm i
+        node_modules/.bin/cypress install
+        mkdir -p ../artifacts
+        chmod -R a+rwx ../artifacts ${CYPRESS_CACHE_FOLDER}
 
-        # build instrumented image node
-        npm i -f
-        yarn -v 
-        yarn build:instrumented
+        rm /workspace/source/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented /workspace/source/.dockerignore
+
+        rm /workspace/source/e2e-tests/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented.cypress /workspace/source//e2e-tests/.dockerignore
+
+
+        echo "listing host"
+        ls -la /workspace/source
+        ls -la /workspace/source/artifacts
+        ls -la /workspace/source/cypress
 
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
+      resources:
+        limits:
+          memory: "8Gi" # Ensure this is higher than max-old-space-size
+          cpu: "2000m"
+        requests:
+          memory: "4Gi"
+          cpu: "1000m"
+      env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=4096" # 4GB or higher (e.g., 8192)
       volumeMounts:
         - name: quay-auth
           mountPath: /secrets/quay
@@ -135,3 +163,4 @@ spec:
         #!/bin/sh
         echo ""
         echo "📦 Final test image: $(cat $(results.test-image.path))"
+
