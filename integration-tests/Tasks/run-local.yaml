@@ -81,14 +81,14 @@ spec:
         git clone $(params.git-url) /workspace/source
         git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
         cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
-        # cd /workspace/source
-        # cd src
-        # echo "src before copy"
-        # ls -la
-        # cd ../
-        # yarn install
-        # yarn run build:instrumented
-        # cp /workspace/source/dist/* /workspace/source/src/
+        cd /workspace/source
+        cd src
+        echo "src before copy"
+        ls -la
+        cd ../
+        yarn install
+        yarn run build:instrumented
+        cp /workspace/source/dist/* /workspace/source/src/
 
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
@@ -129,9 +129,15 @@ spec:
             echo "✅ Quay credentials configured"
           fi
 
+          cd /workspace/source/e2e-tests
+          umask 0002
+          npm i
+          node_modules/.bin/cypress install
+          mkdir -p ../artifacts
+          chmod -R a+rwx ../artifacts ${CYPRESS_CACHE_FOLDER}
+
           echo "listing host"
           ls -la /workspace/source
-          ls -la /work
 
           # Build and push
           /kaniko/executor \
