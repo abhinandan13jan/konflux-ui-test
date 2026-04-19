@@ -104,7 +104,7 @@ spec:
         rm /workspace/source/.dockerignore
         cp /workspace/source/.dockerignore.instrumented /workspace/source/.dockerignore
 
-        rm e2e-tests/.dockerignore
+        rm /workspace/source/e2e-tests/.dockerignore
         cp /workspace/source/.dockerignore.instrumented.cypress /workspace/source//e2e-tests/.dockerignore
 
 
