@@ -70,6 +70,10 @@ spec:
       description: 'Skip deprovisioning Kind cluster (keep cluster for debugging)'
       default: 'false'
       type: string
+    - name: skip-monitoring
+      description: 'Skip deprovisioning Kind cluster (keep cluster for debugging)'
+      default: 'true'
+      type: string
     - name: e2e-spec-file
       description: 'Cypress test spec file to run (for debugging, run single test)'
       default: 'tests/basic-happy-path.spec.ts'
