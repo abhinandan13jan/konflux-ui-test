@@ -8,7 +8,7 @@ RUN wget "https://github.com/sigstore/cosign/releases/download/v2.4.0/cosign-lin
     chmod +x /usr/local/bin/cosign
 
 FROM node:lts-alpine
-WORKDIR /tmp/
+# WORKDIR /tmp/
 
 RUN echo "List"
 RUN ls -la tmp
