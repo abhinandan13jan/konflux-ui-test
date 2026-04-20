@@ -52,7 +52,7 @@ spec:
       secret:
         secretName: $(params.oci-credentials)
         optional: true
-  # steps:
+  steps:
   #   - name: fix-smee-client
   #     image: bitnami/kubectl:latest
   #     workingDir: /workspace
