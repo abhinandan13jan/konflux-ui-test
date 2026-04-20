@@ -34,6 +34,8 @@ spec:
             value: integration-tests/Tasks/run-local.yaml
 
     - name: test-image
+      runAfter:
+        - run-local
       taskRef:
         resolver: git
         params:
