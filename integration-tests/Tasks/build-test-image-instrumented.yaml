@@ -1,0 +1,172 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-test-image
+  annotations:
+    tekton.dev/displayName: 'Build E2E Test Image'
+    tekton.dev/categories: 'Build'
+    tekton.dev/tags: 'build,e2e,docker'
+spec:
+  description: >-
+    Check if e2e-tests directory has changes and rebuild the test image if needed.
+    If no changes, use the default image from quay.io.
+  params:
+    - name: git-url
+      type: string
+      description: 'Git repository URL'
+    - name: git-revision
+      type: string
+      description: 'Git revision (commit SHA)'
+    - name: target-branch
+      type: string
+      default: 'main'
+      description: 'Target branch to compare against'
+    - name: pull-request-number
+      type: string
+      description: 'Pull request number'
+    - name: cluster-access-secret
+      type: string
+      default: konflux-test-infra
+    - name: build-credentials
+      type: string
+      default: build-credentials
+    - name: default-test-image
+      type: string
+      default: 'quay.io/konflux_ui_qe/konflux-ui-tests:latest'
+      description: 'Default test image to use if no changes detected'
+    - name: test-image-repo
+      type: string
+      default: 'quay.io/konflux_ui_qe/konflux-ui-tests'
+      description: 'Repository to push the built test image'
+    - name: quay-secret
+      type: string
+      default: 'quay-secret'
+      description: 'Secret containing Quay.io credentials'
+  results:
+    - name: test-image
+      description: 'The test image to use for E2E tests'
+  workspaces:
+    - name: source
+      description: 'Workspace for cloning git repo and building'
+      optional: true
+  volumes:
+    - name: quay-auth
+      secret:
+        secretName: $(params.quay-secret)
+        optional: true
+  steps:
+    - name: clone-and-check
+      resources:
+        limits:
+          memory: '8Gi' # Ensure this is higher than max-old-space-size
+          cpu: '2000m'
+        requests:
+          memory: '4Gi'
+          cpu: '1000m'
+      env:
+        - name: NODE_OPTIONS
+          value: '--max-old-space-size=4096' # 4GB or higher (e.g., 8192)
+      image: node:lts-alpine
+      script: |
+        #!/bin/sh
+        export CYPRESS_CACHE_FOLDER=//workspace/source/cypress
+        set -eu
+        apk add --no-cache git
+        echo "=== Cloning repository and intrument build ==="
+
+        # Clone to /workspace/source
+        git clone $(params.git-url) /workspace/source
+        cd /workspace/source
+        git fetch $(params.git-url) pull/$(params.pull-request-number)/head:pr-$(params.pull-request-number)
+        git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
+        git checkout pr-$(params.pull-request-number)
+        cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
+        cp /workspace/dummy/.dockerignore.instrumented /workspace/source/.dockerignore.instrumented
+        cp /workspace/dummy/.dockerignore.instrumented.cypress /workspace/source/.dockerignore.instrumented.cypress
+
+        rm /workspace/source/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented /workspace/source/.dockerignore
+
+        rm /workspace/source/e2e-tests/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented.cypress /workspace/source//e2e-tests/.dockerignore
+
+        ls -la
+
+        yarn install
+        yarn run build:instrumented
+        cp /workspace/source/dist/* /workspace/source/src/
+
+        # cd /workspace/source/e2e-tests
+        # umask 0002
+        # npm i
+        # node_modules/.bin/cypress install
+        # mkdir -p ../artifacts
+        # chmod -R a+rwx ../artifacts ${CYPRESS_CACHE_FOLDER}
+
+        rm /workspace/source/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented /workspace/source/.dockerignore
+
+        rm /workspace/source/e2e-tests/.dockerignore
+        cp /workspace/source/.dockerignore.instrumented.cypress /workspace/source//e2e-tests/.dockerignore
+
+        echo "listing source"
+        ls -la /workspace/source
+
+    - name: build-with-kaniko
+      image: gcr.io/kaniko-project/executor:debug
+      resources:
+        limits:
+          memory: '8Gi' # Ensure this is higher than max-old-space-size
+          cpu: '2000m'
+        requests:
+          memory: '4Gi'
+          cpu: '1000m'
+      env:
+        - name: NODE_OPTIONS
+          value: '--max-old-space-size=4096' # 4GB or higher (e.g., 8192)
+      volumeMounts:
+        - name: quay-auth
+          mountPath: /secrets/quay
+          readOnly: true
+      command:
+        - /bin/sh
+      args:
+        - -c
+        - |
+          #BUILD_NEEDED=$(cat /workspace/build-needed)
+          BUILD_NEEDED="true"
+
+          if [ "$BUILD_NEEDED" = "false" ]; then
+            echo "⏭️  Skipping build (no changes in e2e-tests/)"
+            echo "    Using default image: $(params.default-test-image)"
+            exit 0
+          fi
+
+          echo "=== Building test image with Kaniko ==="
+
+          # Prepare authentication
+          mkdir -p /kaniko/.docker
+          if [ -f /secrets/quay/.dockerconfigjson ]; then
+            cp /secrets/quay/.dockerconfigjson /kaniko/.docker/config.json
+            echo "✅ Quay credentials configured"
+          fi
+
+          # Build and push
+          /kaniko/executor \
+            --context=/workspace/source/ \
+            --dockerfile=/workspace/source/e2e-tests/Containerfile.instrumented \
+            --destination=$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented \
+            --cache=false \
+            --verbosity=info \
+            --skip-tls-verify
+
+          echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)--instrumented" > $(results.test-image.path)
+          echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)--instrumented"
+
+    - name: show-result
+      image: alpine:latest
+      script: |
+        #!/bin/sh
+        echo ""
+        echo "📦 Final test image: $(cat $(results.test-image.path))"
