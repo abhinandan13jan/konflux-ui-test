@@ -70,11 +70,10 @@ spec:
       env:
         - name: NODE_OPTIONS
           value: '--max-old-space-size=4096' # 4GB or higher (e.g., 8192)
-      image: node:lts-alpine
+      image: alpine/git:latest
       script: |
         #!/bin/sh
         set -eu
-        apk add --no-cache git
         echo "=== Cloning repository and checking for changes ==="
 
         # Clone to /workspace/source
