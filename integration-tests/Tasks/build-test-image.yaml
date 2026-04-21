@@ -113,18 +113,19 @@ spec:
             cp /secrets/quay/.dockerconfigjson /kaniko/.docker/config.json
             echo "✅ Quay credentials configured"
           fi
+          export IMAGE_DESTINATION=$(params.test-image-repo):pr-$(params.pull-request-number)
 
           # Build and push
           /kaniko/executor \
             --context=/workspace/source/e2e-tests \
             --dockerfile=/workspace/source/e2e-tests/Containerfile \
-            --destination=$(params.test-image-repo):pr-$(params.pull-request-number) \
+            --destination="$IMAGE_DESTINATION" \
             --cache=false \
             --verbosity=info \
             --skip-tls-verify
 
-          echo -n "$(params.test-image-repo):pr-$(params.pull-request-number)" > $(results.test-image.path)
-          echo "✅ Image built and pushed: $(params.test-image-repo):pr-$(params.pull-request-number)"
+          echo -n "$IMAGE_DESTINATION" > $(results.test-image.path)
+          echo "✅ Image built and pushed: $IMAGE_DESTINATION"
 
     - name: show-result
       image: alpine:latest
