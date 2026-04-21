@@ -54,37 +54,26 @@ spec:
       image: alpine/git:latest
       script: |
         #!/bin/sh
-        set -eu
+         set -eu
 
-        echo "=== Cloning repository and checking for changes ==="
+         echo "=== Cloning repository and checking for changes ==="
 
-        # Clone to /workspace/source
-        git clone $(params.git-url) /workspace/source
-        git clone https://github.com/abhinandan13jan/konflux-ui-test /workspace/dummy
-        cd /workspace/source
-        git checkout $(params.git-revision)
-        cp /workspace/dummy/e2e-tests/Containerfile.instrumented /workspace/source/e2e-tests/Containerfile.instrumented
-        cp /workspace/dummy/.dockerignore.instrumented /workspace/source/.dockerignore.instrumented
-        cp /workspace/dummy/.dockerignore.instrumented.cypress /workspace/source/.dockerignore.instrumented.cypress
+         # Clone to /workspace/source
+         git clone $(params.git-url) /workspace/source
+         cd /workspace/source
+         git checkout $(params.git-revision)
 
-        rm /workspace/source/.dockerignore
-        cp /workspace/source/.dockerignore.instrumented /workspace/source/.dockerignore
+         # Check if e2e-tests directory has changes compared to target branch
+         git fetch origin $(params.target-branch)
 
-        rm /workspace/source/e2e-tests/.dockerignore
-        cp /workspace/source/.dockerignore.instrumented.cypress /workspace/source//e2e-tests/.dockerignore
-
-
-        # Check if e2e-tests directory has changes compared to target branch
-        git fetch origin $(params.target-branch)
-
-        if git diff --name-only origin/$(params.target-branch)...HEAD | grep -q "^e2e-tests/"; then
-          echo "✅ Changes detected in e2e-tests/"
-          echo "true" > /workspace/build-needed
-        else
-          echo "ℹ️  No changes in e2e-tests/"
-          echo "false" > /workspace/build-needed
-          echo -n "$(params.default-test-image)" > $(results.test-image.path)
-        fi
+         if git diff --name-only origin/$(params.target-branch)...HEAD | grep -q "^e2e-tests/"; then
+           echo "✅ Changes detected in e2e-tests/"
+           echo "true" > /workspace/build-needed
+         else
+           echo "ℹ️  No changes in e2e-tests/"
+           echo "false" > /workspace/build-needed
+           echo -n "$(params.default-test-image)" > $(results.test-image.path)
+         fi
 
     - name: build-with-kaniko
       image: gcr.io/kaniko-project/executor:debug
