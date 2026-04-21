@@ -223,7 +223,7 @@ spec:
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/build-test-image.yaml
+            value: integration-tests/Tasks/build-test-image-instrumented.yaml
       params:
         - name: git-url
           value: '$(tasks.konflux-ui-pr-metadata.results.git-url)'
