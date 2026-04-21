@@ -33,9 +33,11 @@ spec:
     - name: oci-storage
       type: string
       description: 'OCI repository to store test artifacts'
+      default: ''
     - name: oci-credentials-secret
       type: string
       description: 'Secret containing OCI registry credentials'
+      default: ''
     - name: oci-credentials
       type: string
       default: 'quay-secret'
