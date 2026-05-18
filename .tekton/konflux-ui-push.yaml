@@ -13,7 +13,7 @@ metadata:
     appstudio.openshift.io/component: konflux-ui
     pipelines.appstudio.openshift.io/type: build
   name: konflux-ui-on-push
-  namespace: konflux-ui-tenant
+  namespace: mtakac-tenant
 spec:
   params:
   - name: git-url
@@ -21,7 +21,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/konflux-ui-tenant/konflux-ui/konflux-ui:{{revision}}
+    value: quay.io/redhat-user-workloads/mtakac-tenant/konflux-ui-test:{{revision}}
   - name: dockerfile
     value: Dockerfile
   - name: path-context
