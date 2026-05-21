@@ -373,29 +373,29 @@ spec:
     #     - name: konflux-test-infra-secret
     #       value: $(params.konflux-test-infra-secret)
     # - name: send-slack-notification
-      when:
-        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
-          operator: notin
-          values: ['red-hat-konflux[bot]']
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/milantaky/konflux-ui-test
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: integration-tests/Tasks/send-slack-notification.yaml
-      params:
-        - name: pipeline-aggregate-status
-          value: '$(tasks.status)'
-        - name: test-name
-          value: '$(context.pipelineRun.name)'
-        - name: job-type
-          value: 'pr-check'
-        - name: suite
-          value: 'basic'
-        - name: slack-credentials-secret
-          value: $(params.slack-credentials-secret)
-        - name: console-url
-          value: $(params.console-url)
+      # when:
+      #   - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+      #     operator: notin
+      #     values: ['red-hat-konflux[bot]']
+      # taskRef:
+      #   resolver: git
+      #   params:
+      #     - name: url
+      #       value: https://github.com/milantaky/konflux-ui-test
+      #     - name: revision
+      #       value: main
+      #     - name: pathInRepo
+      #       value: integration-tests/Tasks/send-slack-notification.yaml
+      # params:
+      #   - name: pipeline-aggregate-status
+      #     value: '$(tasks.status)'
+      #   - name: test-name
+      #     value: '$(context.pipelineRun.name)'
+      #   - name: job-type
+      #     value: 'pr-check'
+      #   - name: suite
+      #     value: 'basic'
+      #   - name: slack-credentials-secret
+      #     value: $(params.slack-credentials-secret)
+      #   - name: console-url
+      #     value: $(params.console-url)
