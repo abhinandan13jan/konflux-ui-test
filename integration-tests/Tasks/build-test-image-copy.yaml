@@ -86,8 +86,7 @@ spec:
       args:
         - -c
         - |
-          #BUILD_NEEDED=$(cat /workspace/build-needed)
-          BUILD_NEEDED="true"
+          BUILD_NEEDED=$(cat /workspace/build-needed)
 
           if [ "$BUILD_NEEDED" = "false" ]; then
             echo "⏭️  Skipping build (no changes in e2e-tests/)"

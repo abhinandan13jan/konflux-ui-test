@@ -120,6 +120,7 @@ spec:
         # Escape special characters for JSON
         MESSAGE_ESCAPED=$(echo "${MESSAGE}" | sed 's/"/\\"/g')
 
+        # update to use correct webhook and channel-id
         RESPONSE=$(curl -s -X POST https://slack.com/api/chat.postMessage \
           -H "Authorization: Bearer ${SLACK_TOKEN}" \
           -H "Content-Type: application/json; charset=utf-8" \

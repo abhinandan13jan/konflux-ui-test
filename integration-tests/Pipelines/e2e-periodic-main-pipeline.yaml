@@ -2,8 +2,8 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: e2e-main-pipeline
-  namespace: wlin-tenant
+  name: e2e-periodic-main-pipeline
+  namespace: mtakac-tenant
 spec:
   workspaces:
     - name: shared-data
@@ -21,7 +21,7 @@ spec:
       description: The name of secret where testing infrastructures credentials are stored.
       type: string
     - name: oci-container-repo
-      default: 'quay.io/carawang/konflux-ui-test'
+      default: 'quay.io/konflux_ui_qe/konflux-ui-tests'
       description: The ORAS container used to store all test artifacts.
     - name: e2e-artifacts-repo
       default: 'quay.io/konflux_ui_qe/pr-check-artefacts'
@@ -70,10 +70,6 @@ spec:
       description: 'Skip deprovisioning Kind cluster (keep cluster for debugging)'
       default: 'false'
       type: string
-    - name: skip-monitoring
-      description: 'Skip deprovisioning Kind cluster (keep cluster for debugging)'
-      default: 'true'
-      type: string
     - name: e2e-spec-file
       description: 'Cypress test spec file to run (for debugging, run single test)'
       default: 'tests/basic-happy-path.spec.ts'
@@ -84,50 +80,19 @@ spec:
         resolver: git
         params:
           - name: url
-            value: https://github.com/abhinandan13jan/konflux-ui-test
+            value: https://github.com/konflux-ci/konflux-ui
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/konflux-ui-pr-metadata.yaml
+            value: integration-tests/tasks/konflux-ui-pr-metadata.yaml
       params:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
         - name: test-name
           value: $(context.pipelineRun.name)
-    - name: show-snapshot-data
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/abhinandan13jan/konflux-ui-test
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: integration-tests/Tasks/show-snapshot-data.yaml
-      params:
-        - name: snapshot
-          value: $(params.SNAPSHOT)
-    - name: check-org-membership
-      runAfter:
-        - show-snapshot-data
-        - konflux-ui-pr-metadata
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/abhinandan13jan/konflux-ui-test
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: integration-tests/Tasks/check-org-membership.yaml
-      params:
-        - name: job-spec
-          value: $(tasks.konflux-ui-pr-metadata.results.job-spec)
-        - name: github-credentials-secret
-          value: $(params.github-credentials-secret)
     - name: provision-kind-cluster
       runAfter:
-        - check-org-membership
+        - konflux-ui-pr-metadata
       when:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
           operator: notin
@@ -207,64 +172,25 @@ spec:
           value: $(params.oci-credentials-secret)
         - name: build-credentials
           value: $(params.build-credentials-secret)
-    - name: build-ui-image
+    - name: monitor-webhook-logs
       when:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
           operator: notin
           values: ['red-hat-konflux[bot]']
       runAfter:
-        - provision-kind-cluster
         - deploy-konflux
       taskRef:
         resolver: git
         params:
           - name: url
-            value: https://github.com/abhinandan13jan/konflux-ui-test
+            value: https://github.com/konflux-ci/konflux-ui
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/build-ui-image-instrumented.yaml
+            value: integration-tests/tasks/monitor-webhook-logs.yaml
       params:
-        - name: git-url
-          value: '$(tasks.konflux-ui-pr-metadata.results.git-url)'
-        - name: git-revision
-          value: '$(tasks.konflux-ui-pr-metadata.results.git-revision)'
-        - name: target-branch
-          value: '$(tasks.konflux-ui-pr-metadata.results.target-repo-branch)'
-        - name: pull-request-number
-          value: '$(tasks.konflux-ui-pr-metadata.results.pull-request-number)'
-        - name: default-test-image
-          value: 'quay.io/konflux_ui_qe/konflux-ui-tests:latest'
-        - name: test-image-repo
-          value: '$(params.oci-container-repo)'
-        - name: quay-secret
-          value: $(params.oci-credentials-secret)
-        - name: pr-test-image
-          value: 'quay.io/konflux_ui_qe/konflux-ui-tests:pr-$(tasks.konflux-ui-pr-metadata.results.pull-request-number)'
-        - name: component-image
-          value: '$(tasks.konflux-ui-pr-metadata.results.container-image)'
-    # - name: monitor-webhook-logs
-    #   when:
-    #     - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
-    #       operator: notin
-    #       values: ['red-hat-konflux[bot]']
-    #     - input: '$(params.skip-monitoring)'
-    #       operator: in
-    #       values: ['false']
-    #   runAfter:
-    #     - deploy-konflux
-    #   taskRef:
-    #     resolver: git
-    #     params:
-    #       - name: url
-    #         value: https://github.com/abhinandan13jan/konflux-ui-test
-    #       - name: revision
-    #         value: main
-    #       - name: pathInRepo
-    #         value: integration-tests/Tasks/monitor-webhook-logs.yaml
-    #   params:
-    #     - name: monitoring-duration
-    #       value: '5m'
+        - name: monitoring-duration
+          value: '5m'
     - name: run-e2e-konflux-ui
       when:
         - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
@@ -272,21 +198,18 @@ spec:
           values: ['red-hat-konflux[bot]']
       runAfter:
         - deploy-konflux
-        - build-test-image
       taskRef:
         resolver: git
         params:
           - name: url
-            value: https://github.com/abhinandan13jan/konflux-ui-test
+            value: https://github.com/konflux-ci/konflux-ui
           - name: revision
             value: main
           - name: pathInRepo
-            value: integration-tests/Tasks/run-e2e-konflux-ui-skipped.yaml
+            value: integration-tests/tasks/run-periodic-konflux-ui.yaml
       params:
         - name: test-image
-          value: '$(tasks.build-ui-image.results.ui-image)'
-        # - name: test-image
-        #   value: 'quay.io/carawang/konflux-ui-test:pr-53'
+          value: 'quay.io/konflux_ui_qe/konflux-ui-tests:latest'
         - name: test-name
           value: '$(context.pipelineRun.name)'
         - name: git-repo
@@ -347,3 +270,65 @@ spec:
           value: $(params.oci-container-repo):$(context.pipelineRun.name)
         - name: oci-credentials
           value: $(params.oci-credentials-secret)
+    - name: pull-request-status-message
+      when:
+        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+          operator: notin
+          values: ['red-hat-konflux[bot]']
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/tekton-integration-catalog.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/pull-request-comment/0.2/pull-request-comment.yaml
+      params:
+        - name: test-name
+          value: '$(context.pipelineRun.name)'
+        - name: oci-container
+          value: '$(params.e2e-artifacts-repo):$(context.pipelineRun.name)'
+        - name: job-spec
+          value: '$(tasks.konflux-ui-pr-metadata.results.job-spec)'
+        - name: pipeline-aggregate-status
+          value: '$(tasks.status)'
+        - name: junit-report-name
+          value: e2e-report.xml
+        - name: e2e-log-name
+          value: e2e-tests.log
+        - name: cluster-provision-log-name
+          value: cluster-provision.log
+        - name: enable-test-results-analysis
+          value: 'true'
+        - name: artifact-browser-url
+          value: '$(params.artifact-browser-url)'
+        - name: konflux-test-infra-secret
+          value: $(params.konflux-test-infra-secret)
+    - name: send-slack-notification
+      when:
+        - input: '$(tasks.konflux-ui-pr-metadata.results.pull-request-author)'
+          operator: notin
+          values: ['red-hat-konflux[bot]']
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/konflux-ui
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: integration-tests/tasks/send-slack-notification.yaml
+      params:
+        - name: pipeline-aggregate-status
+          value: '$(tasks.status)'
+        - name: test-name
+          value: '$(context.pipelineRun.name)'
+        - name: job-type
+          value: 'pr-check'
+        - name: suite
+          value: 'basic'
+        - name: slack-credentials-secret
+          value: $(params.slack-credentials-secret)
+        - name: console-url
+          value: $(params.console-url)
