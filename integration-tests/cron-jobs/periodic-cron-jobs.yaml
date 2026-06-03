@@ -2,12 +2,16 @@ kind: CronJob
 apiVersion: batch/v1
 metadata:
   name: periodic-integration-test
-  namespace: konflux-ui-tenant
+  namespace: mtakac-tenant
 spec:
-  schedule: '0 0 */2 * *'
+  schedule: '24 11 * * *'
   jobTemplate:
     spec:
       template:
+        metadata:
+          labels:
+            parent: "cronjobpi"
+          namespace: mtakac-tenant
         spec:
           containers:
             - name: trigger-e2e-scenario
@@ -21,10 +25,10 @@ spec:
                   #!/bin/bash
                   set -euo pipefail
 
-                  export KONFLUX_SCENARIO_NAME="konflux-ui-periodic-main"
+                  export KONFLUX_SCENARIO_NAME="te2est"
                   export KONFLUX_TENANT_NAME="mtakac-tenant"
                   export KONFLUX_APPLICATION_NAME="konflux-ui-secrets"
-                  export KONFLUX_COMPONENT_NAME="konflux-ui"
+                  export KONFLUX_COMPONENT_NAME="konflux-ui-test-e2e-pipeline"
 
                   echo -e "[INFO] Fetching latest snapshot from ${KONFLUX_TENANT_NAME} related to push events."
 
@@ -55,5 +59,5 @@ spec:
 
                   echo "[INFO] Integration Service E2E tests successfully triggered!"
           restartPolicy: Never
-          serviceAccountName: default
-          serviceAccount: default
+          serviceAccountName: mtakac-tenant
+          serviceAccount: mtakac-tenant
