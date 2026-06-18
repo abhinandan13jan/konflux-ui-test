@@ -1,41 +1,24 @@
-name: Feature 🐞
-description: Request a feature
-type: feature
-
+name: "Feature Request"
+description: Create a new ticket for a new feature request
+title: "[REQUEST] - <title>"
+labels: [
+  "enhancement"
+]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Before opening a feature request, please search for the behaviour in the existing issues.
-
-        ---
-
-        Thank you for taking the time to file a bug report. To address this bug as fast as possible, we need some information.
-
   - type: textarea
     id: feature-description
     attributes:
-      label: Feature description
-      description: What happened?
+      label: "About Feature"
+      description: About Feature Request
+      placeholder: "Write about the idea in detail, about how it will be useful and which problem would it solve"
     validations:
       required: true
-
-  - type: dropdown
-    id: install
-    attributes:
-      label: Installation Method
-      description: 'How did you install Podman Desktop?'
-      options:
-        - 'Installer from website/GitHub releases'
-        - 'Brew (macOS)'
-        - 'Chocolatey (Windows)'
-        - 'Flathub (Linux)'
-        - 'Scoop (Windows)'
-        - 'Winget (Windows)'
-        - 'Other'
-
   - type: textarea
-    id: additional-context
+    id: additional-info
     attributes:
-      label: Additional context
-      description: Add any other context or screenshots here.
+      label: "Additional Info"
+      description: Write the facts or additional information that you think should be considered for the solution.
+      placeholder: A few specific words would be enough.
+    validations:
+      required: false
+      
